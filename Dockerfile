@@ -13,6 +13,7 @@ RUN npm install
 
 # Copy the rest of the source code
 COPY src /app/src
+COPY tsconfig.json /app/
 
 # Build the project
 RUN npm run build
@@ -23,14 +24,11 @@ FROM node:20-alpine AS production
 # Set working directory
 WORKDIR /app
 
-# Copy the built files from the builder stage
-COPY --from=builder /app/build /app/build
-
-# Copy necessary config files
+# Copy package.json and package-lock.json
 COPY package.json package-lock.json /app/
 
-# Set environment variable for SwitchBot token
-ENV SWITCHBOT_TOKEN=your_token
+# Copy the built files from the builder stage
+COPY --from=builder /app/build /app/build
 
 # Run the server
 CMD ["node", "build/index.js"]
