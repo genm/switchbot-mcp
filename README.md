@@ -1,18 +1,20 @@
 # @genm/switchbot-mcp
 
-SwitchBot MCPサーバーは、AIアシスタントにSwitchBotデバイスの制御機能を提供するMCPサーバーです。
+A Model Context Protocol server that provides SwitchBot device control capabilities to AI assistants.
 [![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
 
-## 機能
+[日本語](./README.ja.md)
 
-- デバイス一覧の取得
-- デバイスの状態取得
-- デバイスの制御（オン/オフ）
-- デバイスの設定変更
-- シーン制御
-- デバイスステータス監視
+## Features
 
-## インストール
+- List devices
+- Get device status
+- Control devices (on/off)
+- Change device settings
+- Scene control
+- Device status monitoring
+
+## Installation
 
 ### Installing via Smithery
 
@@ -27,18 +29,18 @@ npx -y @smithery/cli install @genm/switchbot-mcp --client claude
 npm install @genm/switchbot-mcp
 ```
 
-## セットアップ手順
+## Setup
 
-### 1. SwitchBot APIの設定
+### 1. SwitchBot API Configuration
 
-1. SwitchBotアプリをインストール
-2. アカウントを作成してログイン
-3. アプリのプロフィール画面から「設定」→「開発者向けオプション」を開く
-4. トークンを取得
+1. Install the SwitchBot app
+2. Create an account and sign in
+3. Go to Profile > Settings > Developer Options
+4. Get both the token and secret key
 
-### 2. MCPサーバー設定
+### 2. MCP Server Configuration
 
-`recline_mcp_settings.json`または`claude_desktop_config.json`に以下の設定を追加：
+Add the following to `claude_desktop_config.json`:
 
 ```json
 {
@@ -47,74 +49,100 @@ npm install @genm/switchbot-mcp
       "command": "node",
       "args": ["path/to/switchbot-mcp/build/index.js"],
       "env": {
-        "SWITCHBOT_TOKEN": "your_token"
+        "SWITCHBOT_TOKEN": "your_token",
+        "SWITCHBOT_SECRET": "your_secret"
       }
     }
   }
 }
 ```
 
-### 3. 環境変数
+### 3. Environment Variables
 
 ```env
 SWITCHBOT_TOKEN=your_token
+SWITCHBOT_SECRET=your_secret
 ```
 
-## サポートしているデバイス
+## Supported Devices
 
-- プラグ
-- ボット
-- カーテン
-- エアコン
-- 加湿器
-- ライト
-- リモコン
+- Plug
+  - Living Room Floor Lamp
+  - Office PC Power Supply
+- Bot
+  - Kitchen Coffee Maker
+  - Living Room Air Purifier
+- Curtain
+  - Bedroom Window Curtain
+  - Study Room Blackout Curtain
+- Air Conditioner
+  - Living Room AC
+  - Bedroom AC
+- Humidifier
+  - Bedroom Humidifier
+  - Study Room Humidifier
+- Light
+  - Kitchen Ceiling Light
+  - Bedroom Night Light
+- Remote Control
+  - Living Room TV
+  - Study Room Fan
 
-## サポートしている操作
+## Device Name Examples
 
-### デバイス管理
-- デバイスの一覧取得
-- デバイスのステータス取得
-- デバイスの電源オン/オフ
-- デバイスの設定変更
+It's recommended to give descriptive names to your devices for easier control by AI assistants. Examples:
 
-### シーン管理
-- シーンの一覧取得
-- シーンの実行
+- "Bedroom Curtain" instead of just "Curtain"
+- "Living Room AC" instead of just "Air Conditioner"
+- "Kitchen Coffee Maker" instead of just "Bot"
 
-### センサー情報
-- 温度
-- 湿度
-- 明るさ
-- モーション
+This naming convention helps AI assistants understand the context and location of each device.
 
-## 開発
+## Supported Operations
+
+### Device Management
+- List devices
+- Get device status
+- Turn devices on/off
+- Change device settings
+
+### Scene Management
+- List scenes
+- Execute scenes
+
+### Sensor Information
+- Temperature
+- Humidity
+- Brightness
+- Motion
+
+## Development
 
 ```bash
-# ビルド
+# Build
 npm run build
 
-# 開発モード（TypeScript）
+# Development mode (TypeScript)
 npm run dev
 
-# 起動
+# Start
 npm start
 ```
 
-## エラー対処
+## Troubleshooting
 
-### デバイスが応答しない場合
+### Device Not Responding
 
-1. デバイスがBluetooth範囲内にあることを確認
-2. デバイスのバッテリー状態を確認
-3. SwitchBotハブとの接続状態を確認
+1. Verify the device is within Bluetooth range
+2. Check device battery status
+3. Verify SwitchBot hub connection status
 
-### 認証エラー
+### Authentication Errors
 
-1. トークンの有効期限を確認
-2. トークンを再生成
-3. 環境変数を更新
+1. Check token and secret key expiration
+2. Regenerate token and secret key
+3. Update environment variables
 
-## ライセンス
+## License
 
 ISC
