@@ -1,6 +1,7 @@
 # @genm/switchbot-mcp
 
 SwitchBot MCPサーバーは、AIアシスタントにSwitchBotデバイスの制御機能を提供するMCPサーバーです。
+[![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
 
 ## 機能
 
@@ -13,6 +14,15 @@ SwitchBot MCPサーバーは、AIアシスタントにSwitchBotデバイスの�
 
 ## インストール
 
+### Installing via Smithery
+
+To install SwitchBot MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@genm/switchbot-mcp):
+
+```bash
+npx -y @smithery/cli install @genm/switchbot-mcp --client claude
+```
+
+### Manual Installation
 ```bash
 npm install @genm/switchbot-mcp
 ```
