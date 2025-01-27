@@ -1,0 +1,23 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+build:
+  dockerBuildPath: ./
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - switchbotToken
+      - switchbotSecret
+    properties:
+      switchbotToken:
+        type: string
+        description: The API token for accessing SwitchBot services.
+      switchbotSecret:
+        type: string
+        description: The API secret for accessing SwitchBot services.
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['build/index.js'], env: { SWITCHBOT_TOKEN: config.switchbotToken, SWITCHBOT_SECRET: config.switchbotSecret } })
