@@ -5,6 +5,8 @@ A Model Context Protocol server that provides SwitchBot device control capabilit
 
 [日本語](./README.ja.md)
 
+<a href="https://glama.ai/mcp/servers/k8m7mttrur"><img width="380" height="200" src="https://glama.ai/mcp/servers/k8m7mttrur/badge" alt="SwitchBot Server MCP server" /></a>
+
 ## Features
 
 - List devices
