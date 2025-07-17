@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/genm-switchbot-mcp-badge.png)](https://mseep.ai/app/genm-switchbot-mcp)
+
 # @genm/switchbot-mcp
 
 A Model Context Protocol server that provides SwitchBot device control capabilities to AI assistants.
