@@ -5,6 +5,7 @@ const TransportSchema = z.enum(["stdio", "http"]);
 const EnvSchema = z.object({
   SWITCHBOT_TOKEN: z.string().min(1, "SWITCHBOT_TOKEN is required"),
   SWITCHBOT_SECRET: z.string().min(1, "SWITCHBOT_SECRET is required"),
+  SWITCHBOT_BASE_URL: z.string().url().optional(),
   MCP_TRANSPORT: TransportSchema.default("stdio"),
   MCP_SERVER_API_KEY: z.string().optional(),
   MCP_HTTP_HOST: z.string().default("127.0.0.1"),
@@ -25,6 +26,7 @@ export interface AppConfig {
     token: string;
     secret: string;
     timeoutMs: number;
+    baseURL?: string;
   };
   transport: {
     mode: TransportMode;
@@ -59,6 +61,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       token: value.SWITCHBOT_TOKEN,
       secret: value.SWITCHBOT_SECRET,
       timeoutMs: value.SWITCHBOT_TIMEOUT_MS,
+      baseURL: value.SWITCHBOT_BASE_URL,
     },
     transport: {
       mode: value.MCP_TRANSPORT,

@@ -16,6 +16,7 @@ async function main(): Promise<void> {
     token: config.switchbot.token,
     secret: config.switchbot.secret,
     timeoutMs: config.switchbot.timeoutMs,
+    baseURL: config.switchbot.baseURL,
     logger,
   });
 
