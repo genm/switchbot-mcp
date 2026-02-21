@@ -1,165 +1,109 @@
 # @genm/switchbot-mcp
 
-A Model Context Protocol server that provides SwitchBot device control capabilities to AI assistants.
+SwitchBot MCP Server v2 for AI assistants.
+
 [![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
 
-<a href="https://glama.ai/mcp/servers/k8m7mttrur"><img width="380" height="200" src="https://glama.ai/mcp/servers/k8m7mttrur/badge" alt="SwitchBot Server MCP server" /></a>
+[日本語](./README.ja.md)
 
-## Features
+## Highlights
 
-- List devices
-- Get device status
-- Control devices (on/off)
-- Change device settings
-- Scene control
-- Device status monitoring
+- v2.0.0 with breaking changes
+- Layered architecture (SwitchBot client / MCP tools / transports)
+- `stdio` and Streamable HTTP transports
+- API key required for HTTP transport
+- Structured MCP tool outputs (`structuredContent`)
 
-## Installation
+## Requirements
 
-### Installing via Smithery
+- Node.js 22+
+- SwitchBot Open API token and secret
 
-To install SwitchBot MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@genm/switchbot-mcp):
+## Install
 
-```bash
-npx -y @smithery/cli install @genm/switchbot-mcp --client claude
-```
-
-### Manual Installation
 ```bash
 npm install @genm/switchbot-mcp
 ```
 
-## Setup
+## Configuration
 
-### 1. SwitchBot API Configuration
+### Required
 
-1. Install the SwitchBot app
-2. Create an account and sign in
-3. Go to Profile > Settings > Developer Options
-4. Get both the token and secret key
+- `SWITCHBOT_TOKEN`
+- `SWITCHBOT_SECRET`
 
-### 2. MCP Server Configuration
+### Transport
 
-Add the following to `claude_desktop_config.json`:
+- `MCP_TRANSPORT=stdio|http` (default: `stdio`)
+- `MCP_SERVER_API_KEY` (required for `http`)
+- `MCP_HTTP_HOST` (default: `127.0.0.1`)
+- `MCP_HTTP_PORT` (default: `8787`)
+- `MCP_HTTP_PATH` (default: `/mcp`)
+
+### Runtime
+
+- `SWITCHBOT_TIMEOUT_MS` (default: `10000`)
+- `SWITCHBOT_LIST_CACHE_TTL_MS` (default: `30000`)
+- `LOG_LEVEL=debug|info|warn|error` (default: `info`)
+
+## MCP tools (v2)
+
+1. `switchbot_list_devices`
+2. `switchbot_get_device_status`
+3. `switchbot_set_power`
+4. `switchbot_send_command`
+5. `switchbot_list_scenes`
+6. `switchbot_execute_scene`
+
+See migration details: [docs/migration-v1-to-v2.md](./docs/migration-v1-to-v2.md)
+
+## Usage
+
+### stdio (Claude Desktop / Smithery)
 
 ```json
 {
   "mcpServers": {
     "switchbot": {
       "command": "node",
-      "args": ["path/to/switchbot-mcp/build/index.js"],
+      "args": ["/absolute/path/to/build/index.js"],
       "env": {
-        "SWITCHBOT_TOKEN": "your_token",
-        "SWITCHBOT_SECRET": "your_secret"
+        "SWITCHBOT_TOKEN": "...",
+        "SWITCHBOT_SECRET": "...",
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
 }
 ```
 
-### 3. Environment Variables
+### HTTP (Streamable HTTP)
 
-```env
-SWITCHBOT_TOKEN=your_token
-SWITCHBOT_SECRET=your_secret
+```bash
+MCP_TRANSPORT=http \
+MCP_SERVER_API_KEY=your_api_key \
+SWITCHBOT_TOKEN=... \
+SWITCHBOT_SECRET=... \
+node build/index.js
 ```
 
-## Supported Devices
-
-- Plug
-  - Living Room Floor Lamp
-  - Office PC Power Supply
-- Bot
-  - Kitchen Coffee Maker
-  - Living Room Air Purifier
-- Curtain
-  - Bedroom Window Curtain
-  - Study Room Blackout Curtain
-- Air Conditioner
-  - Living Room AC
-  - Bedroom AC
-- Humidifier
-  - Bedroom Humidifier
-  - Study Room Humidifier
-- Light
-  - Kitchen Ceiling Light
-  - Bedroom Night Light
-- Remote Control
-  - Living Room TV
-  - Study Room Fan
-
-## Device Name Examples
-
-It's recommended to give descriptive names to your devices for easier control by AI assistants. Examples:
-
-- "Bedroom Curtain" instead of just "Curtain"
-- "Living Room AC" instead of just "Air Conditioner"
-- "Kitchen Coffee Maker" instead of just "Bot"
-
-This naming convention helps AI assistants understand the context and location of each device.
-
-## Supported Operations
-
-### Device Management
-- List devices
-- Get device status
-- Turn devices on/off
-- Change device settings
-
-### Scene Management
-- List scenes
-- Execute scenes
-
-### Sensor Information
-- Temperature
-- Humidity
-- Brightness
-- Motion
+Endpoint: `http://127.0.0.1:8787/mcp`
 
 ## Development
 
-### Tooling setup (mise + lefthook)
-
 ```bash
-# Install Node.js version from .mise.toml
-mise install
-
-# Install dependencies and Git hooks
-mise run setup
-```
-
-The repository uses `lefthook` and `commitlint` to enforce Conventional Commits on `commit-msg`.
-
-Examples:
-- `feat: add scene execution tool`
-- `fix: handle missing SwitchBot credentials`
-
-### Available scripts
-
-```bash
-# Build
+npm ci
+npm run typecheck
+npm run lint
+npm run format
+npm run test
 npm run build
-
-# Development mode (TypeScript)
-npm run dev
-
-# Start
-npm start
 ```
 
-## Troubleshooting
+## Secrets management policy
 
-### Device Not Responding
-
-1. Verify the device is within Bluetooth range
-2. Check device battery status
-3. Verify SwitchBot hub connection status
-
-### Authentication Errors
-
-1. Check token and secret key expiration
-2. Regenerate token and secret key
-3. Update environment variables
+Use secret managers as primary storage (`AWS Secrets Manager`, `AWS SSM Parameter Store`, `Doppler`).
+Environment variable injection at runtime is supported, but plaintext `.env` files are not the recommended primary workflow.
 
 ## License
 
