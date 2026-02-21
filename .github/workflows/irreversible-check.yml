@@ -1,0 +1,22 @@
+name: irreversible-check
+
+on:
+  pull_request:
+    branches: [integration, main]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  irreversible-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Run irreversible change detector
+        run: bash scripts/ci/check-irreversible.sh

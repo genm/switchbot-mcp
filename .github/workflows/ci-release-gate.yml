@@ -1,12 +1,15 @@
-name: CI
+name: ci-release-gate
 
 on:
-  push:
-    branches: ["**"]
   pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  ci-release-gate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -30,7 +33,7 @@ jobs:
       - name: Format check
         run: npm run format
 
-      - name: Test
+      - name: Full test suite
         run: npm run test
 
       - name: Build

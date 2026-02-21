@@ -1,0 +1,49 @@
+name: main-release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  main-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build release artifact
+        run: |
+          npm run build
+          npm pack
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: ./*.tgz
+
+      - name: Publish to npm (optional)
+        if: ${{ vars.ENABLE_NPM_PUBLISH == 'true' && secrets.NPM_TOKEN != '' }}
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
+          npm publish --access public
+
+      - name: Release summary
+        run: |
+          echo "main-release completed." >> "$GITHUB_STEP_SUMMARY"
+          echo "Artifact created via npm pack." >> "$GITHUB_STEP_SUMMARY"
