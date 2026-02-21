@@ -8,7 +8,7 @@ This file defines repository-level operating rules for AI agents working in this
 
 ## General Rules
 
-- Use Conventional Commits for commit messages. If uncertain, inspect recent commit history first.
+- Use Conventional Commits for commit messages in English (no non-ASCII characters). If uncertain, inspect recent commit history first.
 - If a user writes `#{number}`, treat it as a GitHub Issue number and use `gh` when issue operations are needed.
 - For GitHub Actions, always use the latest major version of `actions/*`.
 - In Codex, refer to `ai-rules/` (symlink to `~/.config/ai/rules`) when rule context is needed.
