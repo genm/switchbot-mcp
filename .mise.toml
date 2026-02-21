@@ -4,3 +4,7 @@ node = "22"
 [tasks.setup]
 description = "Install dependencies and Git hooks"
 run = "npm install && npx lefthook install"
+
+[tasks.ci]
+description = "Run all CI checks"
+run = "npm ci && npm run lint && npm run format && npm run typecheck && npm run test && npm run build"
