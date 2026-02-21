@@ -1,14 +1,22 @@
 {
   "name": "@genm/switchbot-mcp",
-  "version": "1.0.0",
-  "description": "SwitchBot API MCP Server - Provides SwitchBot device control for AI assistants",
-  "main": "build/index.js",
+  "version": "2.0.0",
+  "description": "SwitchBot API MCP Server v2 - stdio/Streamable HTTP with secure auth and typed tools",
   "type": "module",
+  "main": "build/index.js",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc && chmod +x build/index.js",
     "start": "node build/index.js",
-    "dev": "ts-node --esm src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "oxlint .",
+    "format": "oxfmt --check .",
+    "format:write": "oxfmt .",
     "prepare": "lefthook install",
     "commitlint": "commitlint --edit"
   },
@@ -26,15 +34,20 @@
     "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.4.1",
-    "@types/node": "^20.10.4",
-    "axios": "^1.6.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "axios": "^1.13.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
-    "lefthook": "^2.1.1"
+    "@types/node": "^22.18.7",
+    "lefthook": "^2.1.1",
+    "nock": "^14.0.10",
+    "oxlint": "^1.15.0",
+    "oxfmt": "^0.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

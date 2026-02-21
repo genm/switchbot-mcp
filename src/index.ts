@@ -1,230 +1,53 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import {
-    CallToolRequestSchema,
-    ErrorCode,
-    ListToolsRequestSchema,
-    McpError,
-} from '@modelcontextprotocol/sdk/types.js';
-import axios from 'axios';
-import crypto from 'crypto';
 
-const SWITCHBOT_TOKEN = process.env.SWITCHBOT_TOKEN;
-const SWITCHBOT_SECRET = process.env.SWITCHBOT_SECRET;
+import { TtlCache } from "./cache/ttl-cache.js";
+import { loadConfig } from "./config/env.js";
+import { createLogger } from "./logger.js";
+import { createSwitchBotMcpServer } from "./mcp/server.js";
+import { SwitchBotClient } from "./switchbot/client.js";
+import { startHttpServer } from "./transports/http.js";
+import { startStdioServer } from "./transports/stdio.js";
 
-if (!SWITCHBOT_TOKEN || !SWITCHBOT_SECRET) {
-    throw new Error('SWITCHBOT_TOKEN and SWITCHBOT_SECRET environment variables are required');
-}
+async function main(): Promise<void> {
+  const config = loadConfig();
+  const logger = createLogger(config.logLevel);
 
-interface SwitchBotDevice {
-    deviceId: string;
-    deviceName: string;
-    deviceType: string;
-    enableCloudService: boolean;
-    hubDeviceId: string;
-}
+  const switchBotClient = new SwitchBotClient({
+    token: config.switchbot.token,
+    secret: config.switchbot.secret,
+    timeoutMs: config.switchbot.timeoutMs,
+    logger,
+  });
 
-interface SwitchBotStatus {
-    deviceId: string;
-    deviceType: string;
-    power: 'on' | 'off';
-    temperature?: number;
-    humidity?: number;
-}
+  const cache = new TtlCache<unknown>();
 
-class SwitchBotServer {
-    private server: Server;
-    private axiosInstance;
+  const mcpServer = createSwitchBotMcpServer({
+    switchBotClient,
+    cache,
+    listCacheTtlMs: config.cache.listTtlMs,
+    logger,
+  });
 
-    constructor() {
-        this.server = new Server(
-            {
-                name: 'switchbot-server',
-                version: '0.1.0',
-            },
-            {
-                capabilities: {
-                    tools: {},
-                },
-            }
-        );
-
-        // Generates timestamp and nonce headers for SwitchBot API authentication.
-        const generateAuthHeaders = () => {
-            const t = Date.now();
-            const nonce = 'requestID';
-            const data = SWITCHBOT_TOKEN! + t + nonce;
-            const signTerm = crypto.createHmac('sha256', SWITCHBOT_SECRET!)
-                .update(Buffer.from(data, 'utf-8'))
-                .digest('base64');
-
-            return {
-                Authorization: SWITCHBOT_TOKEN,
-                sign: signTerm,
-                nonce: nonce,
-                t: t.toString(),
-            };
-        };
-
-        this.axiosInstance = axios.create({
-            baseURL: 'https://api.switch-bot.com/v1.1',
-            headers: generateAuthHeaders(),
-        });
-
-        this.setupToolHandlers();
-
-        this.server.onerror = (error) => console.error('[MCP Error]', error);
-        process.on('SIGINT', async () => {
-            await this.server.close();
-            process.exit(0);
-        });
+  if (config.transport.mode === "http") {
+    if (!config.transport.http.apiKey) {
+      throw new Error("MCP_SERVER_API_KEY is required in HTTP transport mode");
     }
 
-    private setupToolHandlers() {
-        this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
-            tools: [
-                {
-                    name: 'list_devices',
-                    description: 'List all available devices',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {},
-                        required: [],
-                    },
-                },
-                {
-                    name: 'get_device_status',
-                    description: 'Get device status',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {
-                            deviceId: {
-                                type: 'string',
-                                description: 'Device ID',
-                            },
-                        },
-                        required: ['deviceId'],
-                    },
-                },
-                {
-                    name: 'control_device',
-                    description: 'Control a device',
-                    inputSchema: {
-                        type: 'object',
-                        properties: {
-                            deviceId: {
-                                type: 'string',
-                                description: 'Device ID',
-                            },
-                            command: {
-                                type: 'string',
-                                description: 'Command (turnOn, turnOff)',
-                                enum: ['turnOn', 'turnOff'],
-                            },
-                        },
-                        required: ['deviceId', 'command'],
-                    },
-                },
-            ],
-        }));
+    await startHttpServer(mcpServer, {
+      host: config.transport.http.host,
+      port: config.transport.http.port,
+      path: config.transport.http.path,
+      apiKey: config.transport.http.apiKey,
+      logger,
+    });
+    return;
+  }
 
-        this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-            try {
-                switch (request.params.name) {
-                    case 'list_devices': {
-                        const response = await this.axiosInstance.get('/devices');
-                        return {
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: JSON.stringify(response.data.body.deviceList, null, 2),
-                                },
-                            ],
-                        };
-                    }
-
-                    case 'get_device_status': {
-                        const args = request.params.arguments;
-                        if (!args || typeof args.deviceId !== 'string') {
-                            throw new McpError(
-                                ErrorCode.InvalidParams,
-                                'deviceId is required'
-                            );
-                        }
-
-                        const response = await this.axiosInstance.get(
-                            `/devices/${args.deviceId}/status`
-                        );
-
-                        return {
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: JSON.stringify(response.data.body, null, 2),
-                                },
-                            ],
-                        };
-                    }
-
-                    case 'control_device': {
-                        const args = request.params.arguments;
-                        if (!args || typeof args.deviceId !== 'string' || typeof args.command !== 'string') {
-                            throw new McpError(
-                                ErrorCode.InvalidParams,
-                                'deviceId and command are required'
-                            );
-                        }
-
-                        const response = await this.axiosInstance.post(
-                            `/devices/${args.deviceId}/commands`,
-                            {
-                                command: args.command,
-                                parameter: 'default',
-                                commandType: 'command',
-                            }
-                        );
-
-                        return {
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: JSON.stringify(response.data, null, 2),
-                                },
-                            ],
-                        };
-                    }
-
-                    default:
-                        throw new McpError(
-                            ErrorCode.MethodNotFound,
-                            `Unknown tool: ${request.params.name}`
-                        );
-                }
-            } catch (error) {
-                if (axios.isAxiosError(error)) {
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: `SwitchBot API error: ${error.response?.data?.message ?? error.message
-                                    }`,
-                            },
-                        ],
-                        isError: true,
-                    };
-                }
-                throw error;
-            }
-        });
-    }
-
-    async run() {
-        const transport = new StdioServerTransport();
-        await this.server.connect(transport);
-        console.error('SwitchBot MCP server running on stdio');
-    }
+  await startStdioServer(mcpServer, logger);
 }
 
-const server = new SwitchBotServer();
-server.run().catch(console.error);
+main().catch((error) => {
+  // eslint-disable-next-line no-console
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});
