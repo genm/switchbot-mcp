@@ -1,9 +1,18 @@
 {
-  "name": "@genm/switchbot-mcp",
+  "name": "@genm-dev/switchbot-mcp",
   "version": "2.0.0",
   "description": "SwitchBot API MCP Server v2 - stdio/Streamable HTTP with secure auth and typed tools",
   "type": "module",
   "main": "build/index.js",
+  "bin": {
+    "switchbot-mcp": "build/index.js"
+  },
+  "files": [
+    "build",
+    "README.md",
+    "README.ja.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=22"
   },
@@ -13,13 +22,19 @@
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:e2e": "vitest run tests/mcp/stdio-e2e.test.ts",
+    "test:unit": "vitest run --exclude 'tests/**/**e2e.test.ts'",
+    "test:integration": "vitest run tests/mcp/stdio-e2e.test.ts tests/transports/http-e2e.test.ts",
+    "test:e2e": "vitest run tests/mcp/stdio-e2e.test.ts tests/transports/http-e2e.test.ts",
+    "test:live": "vitest run tests/live/switchbot-live.test.ts",
     "test:watch": "vitest",
     "lint": "oxlint .",
     "format": "oxfmt --check .",
     "format:write": "oxfmt .",
     "prepare": "lefthook install",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "guard:irreversible": "bash scripts/ci/check-irreversible.sh",
+    "guard:rebase": "bash scripts/hooks/check-rebase-before-push.sh",
+    "labels:sync": "bash scripts/github/sync-labels.sh"
   },
   "keywords": [
     "mcp",
@@ -32,7 +47,8 @@
     "url": "git+https://github.com/genm/mcps.git"
   },
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
