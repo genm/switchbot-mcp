@@ -1,10 +1,42 @@
-# @genm/switchbot-mcp
+# @genm-dev/switchbot-mcp
 
 SwitchBot MCP Server v2 for AI assistants.
 
-[![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
+[![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
 
 [日本語](./README.ja.md)
+
+## Quick Install
+
+### Cursor (one click)
+
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
+
+Set `SWITCHBOT_TOKEN` and `SWITCHBOT_SECRET` in Cursor after installation.
+
+### VS Code
+
+```bash
+code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}}'
+```
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
+      "env": {
+        "SWITCHBOT_TOKEN": "YOUR_SWITCHBOT_TOKEN",
+        "SWITCHBOT_SECRET": "YOUR_SWITCHBOT_SECRET",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
 
 ## Highlights
 
@@ -13,6 +45,7 @@ SwitchBot MCP Server v2 for AI assistants.
 - `stdio` and Streamable HTTP transports
 - API key required for HTTP transport
 - Structured MCP tool outputs (`structuredContent`)
+- Polyrepo-first gated flow for maintainable OSS operations
 
 ## Requirements
 
@@ -22,7 +55,7 @@ SwitchBot MCP Server v2 for AI assistants.
 ## Install
 
 ```bash
-npm install @genm/switchbot-mcp
+npm install @genm-dev/switchbot-mcp
 ```
 
 ## Configuration
@@ -63,7 +96,25 @@ See migration details: [docs/migration-v1-to-v2.md](./docs/migration-v1-to-v2.md
 
 ## Usage
 
-### stdio (Claude Desktop / Smithery)
+### stdio (package / npx)
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
+      "env": {
+        "SWITCHBOT_TOKEN": "...",
+        "SWITCHBOT_SECRET": "...",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### stdio (local development build)
 
 ```json
 {
@@ -88,10 +139,16 @@ MCP_TRANSPORT=http \
 MCP_SERVER_API_KEY=your_api_key \
 SWITCHBOT_TOKEN=... \
 SWITCHBOT_SECRET=... \
-node build/index.js
+npx -y @genm-dev/switchbot-mcp
 ```
 
 Endpoint: `http://127.0.0.1:8787/mcp`
+
+### Alternative install (Smithery)
+
+```bash
+npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
+```
 
 ## Testing strategy
 
@@ -105,9 +162,23 @@ npm run test
 npm run build
 ```
 
-`npm run test` includes stdio process e2e (`tests/mcp/stdio-e2e.test.ts`) that starts the MCP server and validates all v2 tools with a local mock SwitchBot API.
+`npm run test` includes stdio and HTTP process e2e tests.
+
+### Optional live test (real SwitchBot API)
+
+Run this only when you want to validate real API connectivity with your own credentials.
+
+```bash
+SWITCHBOT_TOKEN=... SWITCHBOT_SECRET=... npm run test:live
+```
+
+- Uses real SwitchBot API (not mocked)
+- Read-only checks (`list_devices` and `list_scenes`)
+- If credentials are missing, the live test suite is skipped
 
 ## MCP Inspector (manual debugging)
+
+Use Inspector only for local manual debugging. Do not expose it to public networks.
 
 ```bash
 npx @modelcontextprotocol/inspector node build/index.js
@@ -122,6 +193,14 @@ npx @modelcontextprotocol/inspector \
   -e MCP_TRANSPORT=stdio \
   -- node build/index.js
 ```
+
+This repository does not pin Inspector as a dependency. Use `npx` to get the latest patched release.
+
+## Maintainer docs
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [docs/gated-github-flow.md](./docs/gated-github-flow.md)
+- [docs/release-process.md](./docs/release-process.md)
 
 ## Secrets management policy
 

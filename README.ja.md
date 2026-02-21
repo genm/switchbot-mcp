@@ -1,10 +1,42 @@
-# @genm/switchbot-mcp
+# @genm-dev/switchbot-mcp
 
 AIアシスタント向けの SwitchBot MCP Server v2 です。
 
-[![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
+[![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
 
 [English](./README.md)
+
+## クイックインストール
+
+### Cursor（ワンクリック）
+
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
+
+インストール後、Cursor 側で `SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を設定してください。
+
+### VS Code
+
+```bash
+code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}}'
+```
+
+### Claude Desktop
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
+      "env": {
+        "SWITCHBOT_TOKEN": "YOUR_SWITCHBOT_TOKEN",
+        "SWITCHBOT_SECRET": "YOUR_SWITCHBOT_SECRET",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
 
 ## 概要
 
@@ -13,6 +45,7 @@ AIアシスタント向けの SwitchBot MCP Server v2 です。
 - `stdio` と Streamable HTTP を正式サポート
 - HTTPモードは APIキー必須
 - 全ツールで `structuredContent` を返却
+- polyrepo前提の gated 運用でOSS保守性を重視
 
 ## 必要条件
 
@@ -22,7 +55,7 @@ AIアシスタント向けの SwitchBot MCP Server v2 です。
 ## インストール
 
 ```bash
-npm install @genm/switchbot-mcp
+npm install @genm-dev/switchbot-mcp
 ```
 
 ## 設定
@@ -63,7 +96,25 @@ npm install @genm/switchbot-mcp
 
 ## 使い方
 
-### stdio（Claude Desktop / Smithery）
+### stdio（package / npx）
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
+      "env": {
+        "SWITCHBOT_TOKEN": "...",
+        "SWITCHBOT_SECRET": "...",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### stdio（ローカルbuild）
 
 ```json
 {
@@ -88,10 +139,16 @@ MCP_TRANSPORT=http \
 MCP_SERVER_API_KEY=your_api_key \
 SWITCHBOT_TOKEN=... \
 SWITCHBOT_SECRET=... \
-node build/index.js
+npx -y @genm-dev/switchbot-mcp
 ```
 
 エンドポイント: `http://127.0.0.1:8787/mcp`
+
+### 代替インストール（Smithery）
+
+```bash
+npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
+```
 
 ## テスト戦略
 
@@ -105,9 +162,23 @@ npm run test
 npm run build
 ```
 
-`npm run test` には stdio 実プロセスE2E（`tests/mcp/stdio-e2e.test.ts`）が含まれ、ローカルのモックSwitchBot APIで v2 ツールを検証します。
+`npm run test` には stdio / HTTP の実プロセスE2Eが含まれます。
+
+### 任意: Liveテスト（実SwitchBot API）
+
+実APIへの接続確認をしたい場合のみ、手元の資格情報で実行してください。
+
+```bash
+SWITCHBOT_TOKEN=... SWITCHBOT_SECRET=... npm run test:live
+```
+
+- モックではなく実SwitchBot APIを利用
+- 読み取り系のみ（`list_devices` / `list_scenes`）
+- 資格情報がない場合は Live テストはスキップされます
 
 ## MCP Inspector（手動デバッグ）
+
+Inspector はローカルでの手動デバッグ専用です。外部ネットワークへ公開しないでください。
 
 ```bash
 npx @modelcontextprotocol/inspector node build/index.js
@@ -122,6 +193,14 @@ npx @modelcontextprotocol/inspector \
   -e MCP_TRANSPORT=stdio \
   -- node build/index.js
 ```
+
+このリポジトリでは Inspector を依存固定しません。`npx` で最新版を利用してください。
+
+## メンテナ向けドキュメント
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [docs/gated-github-flow.md](./docs/gated-github-flow.md)
+- [docs/release-process.md](./docs/release-process.md)
 
 ## Secrets運用方針
 

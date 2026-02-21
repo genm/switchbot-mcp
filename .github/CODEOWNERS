@@ -1,0 +1,11 @@
+# Default owner for repository
+* @genm
+
+# Critical runtime / integration boundaries
+/src/transports/** @genm
+/src/mcp/** @genm
+
+# CI and release governance
+/.github/workflows/** @genm
+/scripts/ci/** @genm
+/scripts/hooks/** @genm
