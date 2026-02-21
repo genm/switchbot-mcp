@@ -46,6 +46,10 @@ npm install @genm/switchbot-mcp
 - `SWITCHBOT_LIST_CACHE_TTL_MS` (default: `30000`)
 - `LOG_LEVEL=debug|info|warn|error` (default: `info`)
 
+### Test-only (optional)
+
+- `SWITCHBOT_BASE_URL` (override SwitchBot API endpoint for deterministic e2e tests)
+
 ## MCP tools (v2)
 
 1. `switchbot_list_devices`
@@ -89,15 +93,34 @@ node build/index.js
 
 Endpoint: `http://127.0.0.1:8787/mcp`
 
-## Development
+## Testing strategy
+
+### Required gates (deterministic)
 
 ```bash
-npm ci
 npm run typecheck
 npm run lint
 npm run format
 npm run test
 npm run build
+```
+
+`npm run test` includes stdio process e2e (`tests/mcp/stdio-e2e.test.ts`) that starts the MCP server and validates all v2 tools with a local mock SwitchBot API.
+
+## MCP Inspector (manual debugging)
+
+```bash
+npx @modelcontextprotocol/inspector node build/index.js
+```
+
+Pass env vars with `-e`, for example:
+
+```bash
+npx @modelcontextprotocol/inspector \
+  -e SWITCHBOT_TOKEN=... \
+  -e SWITCHBOT_SECRET=... \
+  -e MCP_TRANSPORT=stdio \
+  -- node build/index.js
 ```
 
 ## Secrets management policy

@@ -46,6 +46,10 @@ npm install @genm/switchbot-mcp
 - `SWITCHBOT_LIST_CACHE_TTL_MS`（デフォルト: `30000`）
 - `LOG_LEVEL=debug|info|warn|error`（デフォルト: `info`）
 
+### テスト用（任意）
+
+- `SWITCHBOT_BASE_URL`（決定論的E2E用にSwitchBot APIエンドポイントを上書き）
+
 ## MCPツール（v2）
 
 1. `switchbot_list_devices`
@@ -89,15 +93,34 @@ node build/index.js
 
 エンドポイント: `http://127.0.0.1:8787/mcp`
 
-## 開発
+## テスト戦略
+
+### 必須ゲート（決定論的）
 
 ```bash
-npm ci
 npm run typecheck
 npm run lint
 npm run format
 npm run test
 npm run build
+```
+
+`npm run test` には stdio 実プロセスE2E（`tests/mcp/stdio-e2e.test.ts`）が含まれ、ローカルのモックSwitchBot APIで v2 ツールを検証します。
+
+## MCP Inspector（手動デバッグ）
+
+```bash
+npx @modelcontextprotocol/inspector node build/index.js
+```
+
+環境変数を渡す場合:
+
+```bash
+npx @modelcontextprotocol/inspector \
+  -e SWITCHBOT_TOKEN=... \
+  -e SWITCHBOT_SECRET=... \
+  -e MCP_TRANSPORT=stdio \
+  -- node build/index.js
 ```
 
 ## Secrets運用方針
