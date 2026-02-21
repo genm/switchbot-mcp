@@ -50,7 +50,7 @@ class SwitchBotServer {
             }
         );
 
-        // SwitchBot APIのタイムスタンプとノンスを生成する関数
+        // Generates timestamp and nonce headers for SwitchBot API authentication.
         const generateAuthHeaders = () => {
             const t = Date.now();
             const nonce = 'requestID';
@@ -86,7 +86,7 @@ class SwitchBotServer {
             tools: [
                 {
                     name: 'list_devices',
-                    description: 'デバイス一覧を取得します',
+                    description: 'List all available devices',
                     inputSchema: {
                         type: 'object',
                         properties: {},
@@ -95,13 +95,13 @@ class SwitchBotServer {
                 },
                 {
                     name: 'get_device_status',
-                    description: 'デバイスのステータスを取得します',
+                    description: 'Get device status',
                     inputSchema: {
                         type: 'object',
                         properties: {
                             deviceId: {
                                 type: 'string',
-                                description: 'デバイスID',
+                                description: 'Device ID',
                             },
                         },
                         required: ['deviceId'],
@@ -109,17 +109,17 @@ class SwitchBotServer {
                 },
                 {
                     name: 'control_device',
-                    description: 'デバイスを制御します',
+                    description: 'Control a device',
                     inputSchema: {
                         type: 'object',
                         properties: {
                             deviceId: {
                                 type: 'string',
-                                description: 'デバイスID',
+                                description: 'Device ID',
                             },
                             command: {
                                 type: 'string',
-                                description: 'コマンド（turnOn, turnOff）',
+                                description: 'Command (turnOn, turnOff)',
                                 enum: ['turnOn', 'turnOff'],
                             },
                         },
@@ -149,7 +149,7 @@ class SwitchBotServer {
                         if (!args || typeof args.deviceId !== 'string') {
                             throw new McpError(
                                 ErrorCode.InvalidParams,
-                                'デバイスIDが必要です'
+                                'deviceId is required'
                             );
                         }
 
@@ -172,7 +172,7 @@ class SwitchBotServer {
                         if (!args || typeof args.deviceId !== 'string' || typeof args.command !== 'string') {
                             throw new McpError(
                                 ErrorCode.InvalidParams,
-                                'デバイスIDとコマンドが必要です'
+                                'deviceId and command are required'
                             );
                         }
 

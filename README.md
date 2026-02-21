@@ -3,8 +3,6 @@
 A Model Context Protocol server that provides SwitchBot device control capabilities to AI assistants.
 [![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
 
-[日本語](./README.ja.md)
-
 <a href="https://glama.ai/mcp/servers/k8m7mttrur"><img width="380" height="200" src="https://glama.ai/mcp/servers/k8m7mttrur/badge" alt="SwitchBot Server MCP server" /></a>
 
 ## Features
@@ -119,6 +117,24 @@ This naming convention helps AI assistants understand the context and location o
 - Motion
 
 ## Development
+
+### Tooling setup (mise + lefthook)
+
+```bash
+# Install Node.js version from .mise.toml
+mise install
+
+# Install dependencies and Git hooks
+mise run setup
+```
+
+The repository uses `lefthook` and `commitlint` to enforce Conventional Commits on `commit-msg`.
+
+Examples:
+- `feat: add scene execution tool`
+- `fix: handle missing SwitchBot credentials`
+
+### Available scripts
 
 ```bash
 # Build
