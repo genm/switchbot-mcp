@@ -20,6 +20,10 @@ const listDevicesOutputSchema = z.object({
   ),
 });
 
+const listDevicesRawOutputSchema = z.object({
+  devices: z.array(z.record(z.unknown())),
+});
+
 const getDeviceStatusOutputSchema = z.object({
   deviceId: z.string(),
   deviceType: z.string(),
@@ -90,7 +94,17 @@ export function registerTools(options: ToolRegistrationOptions): void {
         }
 
         const devices = await switchBotClient.listDevices(includeInfrared);
-        const filtered = devices.filter((device) => {
+        const normalized = devices
+          .map((device) =>
+            normalizeDevice(device as unknown as Record<string, unknown>),
+          )
+          .filter(
+            (
+              device,
+            ): device is z.infer<typeof listDevicesOutputSchema>["devices"][number] =>
+              device !== null,
+          );
+        const filtered = normalized.filter((device) => {
           if (args.deviceType && device.deviceType !== args.deviceType) {
             return false;
           }
@@ -110,6 +124,69 @@ export function registerTools(options: ToolRegistrationOptions): void {
         const output = { devices: filtered };
         cache.set(cacheKey, output, listCacheTtlMs);
         return successResult(`Found ${filtered.length} devices.`, output);
+      } catch (error) {
+        return errorResult(error);
+      }
+    },
+  );
+
+  server.registerTool(
+    "switchbot_list_devices_raw",
+    {
+      description:
+        "List SwitchBot devices with raw upstream fields (advanced/unstable)",
+      inputSchema: {
+        includeInfrared: z.boolean().optional(),
+        nameQuery: z.string().optional(),
+        deviceType: z.string().optional(),
+      },
+      outputSchema: listDevicesRawOutputSchema,
+    },
+    async (args) => {
+      try {
+        const includeInfrared = args.includeInfrared ?? false;
+        const cacheKey = `${DEVICE_LIST_CACHE_KEY}:raw:${includeInfrared}`;
+        const cached = cache.get(cacheKey) as
+          | z.infer<typeof listDevicesRawOutputSchema>
+          | undefined;
+        if (cached) {
+          return successResult(
+            `Found ${cached.devices.length} raw devices (cached).`,
+            cached,
+          );
+        }
+
+        const devices = await switchBotClient.listDevices(includeInfrared).then(
+          (items) => items as unknown as Array<Record<string, unknown>>,
+        );
+
+        const filtered = devices.filter((device) => {
+          if (args.deviceType) {
+            const currentType =
+              typeof device.deviceType === "string"
+                ? device.deviceType
+                : typeof device.remoteType === "string"
+                  ? device.remoteType
+                  : undefined;
+            if (currentType !== args.deviceType) {
+              return false;
+            }
+          }
+
+          if (args.nameQuery) {
+            const currentName =
+              typeof device.deviceName === "string" ? device.deviceName : "";
+            if (!currentName.toLowerCase().includes(args.nameQuery.toLowerCase())) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        const output = { devices: filtered };
+        cache.set(cacheKey, output, listCacheTtlMs);
+        return successResult(`Found ${filtered.length} raw devices.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -265,4 +342,33 @@ export function registerTools(options: ToolRegistrationOptions): void {
 
 function invalidateListCaches(cache: TtlCache<unknown>): void {
   cache.clear();
+}
+
+function normalizeDevice(
+  device: Record<string, unknown>,
+): z.infer<typeof listDevicesOutputSchema>["devices"][number] | null {
+  if (typeof device.deviceId !== "string" || typeof device.deviceName !== "string") {
+    return null;
+  }
+
+  const output: z.infer<typeof listDevicesOutputSchema>["devices"][number] = {
+    deviceId: device.deviceId,
+    deviceName: device.deviceName,
+    deviceType:
+      typeof device.deviceType === "string"
+        ? device.deviceType
+        : typeof device.remoteType === "string"
+          ? device.remoteType
+          : "unknown",
+    enableCloudService:
+      typeof device.enableCloudService === "boolean"
+        ? device.enableCloudService
+        : false,
+  };
+
+  if (typeof device.hubDeviceId === "string") {
+    output.hubDeviceId = device.hubDeviceId;
+  }
+
+  return output;
 }
