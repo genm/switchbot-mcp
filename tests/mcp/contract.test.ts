@@ -18,6 +18,7 @@ describe("MCP tools contract", () => {
       deviceName: "Living Room Lamp",
       deviceType: "Plug",
       enableCloudService: true,
+      master: true,
     },
   ]);
 
@@ -70,6 +71,7 @@ describe("MCP tools contract", () => {
       "switchbot_execute_scene",
       "switchbot_get_device_status",
       "switchbot_list_devices",
+      "switchbot_list_devices_raw",
       "switchbot_list_scenes",
       "switchbot_send_command",
       "switchbot_set_power",
@@ -88,9 +90,28 @@ describe("MCP tools contract", () => {
         {
           deviceId: "A",
           deviceName: "Living Room Lamp",
+          deviceType: "Plug",
+          enableCloudService: true,
         },
       ],
     });
+    const devices = (
+      result.structuredContent as { devices: Array<Record<string, unknown>> }
+    ).devices;
+    expect(devices[0]).not.toHaveProperty("master");
+  });
+
+  it("returns raw device fields from raw tool", async () => {
+    const result = await client.callTool({
+      name: "switchbot_list_devices_raw",
+      arguments: { includeInfrared: false },
+    });
+
+    expect(result.isError).not.toBe(true);
+    const devices = (
+      result.structuredContent as { devices: Array<Record<string, unknown>> }
+    ).devices;
+    expect(devices[0]).toHaveProperty("master", true);
   });
 
   it("invalidates list caches when control tools run", async () => {

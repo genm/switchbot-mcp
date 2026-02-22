@@ -64,6 +64,7 @@ describe("stdio e2e", () => {
       "switchbot_execute_scene",
       "switchbot_get_device_status",
       "switchbot_list_devices",
+      "switchbot_list_devices_raw",
       "switchbot_list_scenes",
       "switchbot_send_command",
       "switchbot_set_power",
