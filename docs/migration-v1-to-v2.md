@@ -16,6 +16,7 @@
 | `control_device` | `switchbot_set_power` or `switchbot_send_command` |
 | N/A | `switchbot_list_scenes` |
 | N/A | `switchbot_execute_scene` |
+| N/A | `switchbot_list_devices_raw` (advanced/raw) |
 
 ## Input/output updates
 

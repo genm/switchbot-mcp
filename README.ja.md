@@ -91,6 +91,7 @@ npm install @genm-dev/switchbot-mcp
 4. `switchbot_send_command`
 5. `switchbot_list_scenes`
 6. `switchbot_execute_scene`
+7. `switchbot_list_devices_raw`（上級者向け: 上流の生フィールドを返却）
 
 移行手順は [docs/migration-v1-to-v2.md](./docs/migration-v1-to-v2.md) を参照してください。
 
