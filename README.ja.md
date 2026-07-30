@@ -1,147 +1,230 @@
-# @genm/switchbot-mcp
+# @genm-dev/switchbot-mcp
 
-SwitchBot MCPサーバーは、AIアシスタントにSwitchBotデバイスの制御機能を提供するMCPサーバーです。
-[![smithery badge](https://smithery.ai/badge/@genm/switchbot-mcp)](https://smithery.ai/server/@genm/switchbot-mcp)
+AIアシスタント向けの SwitchBot MCP Server v3 です。
+
+[![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
+[![npm version](https://img.shields.io/npm/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![Node.js](https://img.shields.io/node/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![License](https://img.shields.io/npm/l/@genm-dev/switchbot-mcp.svg)](./LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-ready-5A67D8.svg)](./server.json)
+[![CI](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml)
 
 [English](./README.md)
 
-## 機能
+## クイックインストール
 
-- デバイス一覧の取得
-- デバイスの状態取得
-- デバイスの制御（オン/オフ）
-- デバイスの設定変更
-- シーン制御
-- デバイスステータス監視
+### ワンクリックインストール
 
-## インストール
+[![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22switchbot%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40genm-dev%2Fswitchbot-mcp%22%5D%2C%22env%22%3A%7B%22SWITCHBOT_TOKEN%22%3A%22YOUR_SWITCHBOT_TOKEN%22%2C%22SWITCHBOT_SECRET%22%3A%22YOUR_SWITCHBOT_SECRET%22%2C%22MCP_TRANSPORT%22%3A%22stdio%22%7D%7D)
 
-### Smitheryを使用したインストール
+インストール後、`SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を実際の資格情報へ
+置き換えてください。ボタンは公開npm packageを`npx`経由で設定します。起動前に
+設定内容を確認してください。
 
-[Smithery](https://smithery.ai/server/@genm/switchbot-mcp)を使用してClaude Desktop用にSwitchBot MCPサーバーを自動インストールする：
+### VS Code
 
 ```bash
-npx -y @smithery/cli install @genm/switchbot-mcp --client claude
+code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}'
 ```
 
-### 手動インストール
-```bash
-npm install @genm/switchbot-mcp
-```
-
-## セットアップ手順
-
-### 1. SwitchBot APIの設定
-
-1. SwitchBotアプリをインストール
-2. アカウントを作成してログイン
-3. アプリのプロフィール画面から「設定」→「開発者向けオプション」を開く
-4. トークンとシークレットキーを取得
-
-### 2. MCPサーバー設定
-
-`claude_desktop_config.json`に以下の設定を追加：
+### Claude Desktop
 
 ```json
 {
   "mcpServers": {
     "switchbot": {
-      "command": "node",
-      "args": ["path/to/switchbot-mcp/build/index.js"],
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
       "env": {
-        "SWITCHBOT_TOKEN": "your_token",
-        "SWITCHBOT_SECRET": "your_secret"
+        "SWITCHBOT_TOKEN": "YOUR_SWITCHBOT_TOKEN",
+        "SWITCHBOT_SECRET": "YOUR_SWITCHBOT_SECRET",
+        "MCP_TRANSPORT": "stdio"
       }
     }
   }
 }
 ```
 
-### 3. 環境変数
+## 概要
 
-```env
-SWITCHBOT_TOKEN=your_token
-SWITCHBOT_SECRET=your_secret
-```
+- Node.js 24 LTS を基盤とする v3.0.0
+- 標準 `fetch` と厳密な上流レスポンス検証
+- レイヤー分離（SwitchBotクライアント / MCPツール / トランスポート）
+- `stdio` と Streamable HTTP を正式サポート
+- HTTPモードは APIキー必須
+- 全ツールで `structuredContent` を返却
+- 対応ランタイム・配布パッケージ・コンテナを横断する公開repo向けCI
 
-## サポートしているデバイス
+## 必要条件
 
-- プラグ
-  - リビングのフロアライト
-  - 書斎のPCの電源
-- ボット
-  - キッチンのコーヒーメーカー
-  - リビングの空気清浄機
-- カーテン
-  - 寝室の窓のカーテン
-  - 書斎の遮光カーテン
-- エアコン
-  - リビングのエアコン
-  - 寝室のエアコン
-- 加湿器
-  - 寝室の加湿器
-  - 書斎の加湿器
-- ライト
-  - キッチンの天井照明
-  - 寝室の常夜灯
-- リモコン
-  - リビングのテレビ
-  - 書斎の扇風機
+- Node.js 24.15+
+- SwitchBot Open API の token / secret
 
-## デバイス名の例
-
-AIアシスタントが制御しやすいように、デバイスには場所や用途を含む具体的な名前をつけることをお勧めします：
-
-- 「カーテン」ではなく「寝室のカーテン」
-- 「エアコン」ではなく「リビングのエアコン」
-- 「ボット」ではなく「キッチンのコーヒーメーカー」
-
-このような命名規則により、AIアシスタントは各デバイスのコンテキストと場所を理解しやすくなります。
-
-## サポートしている操作
-
-### デバイス管理
-- デバイスの一覧取得
-- デバイスのステータス取得
-- デバイスの電源オン/オフ
-- デバイスの設定変更
-
-### シーン管理
-- シーンの一覧取得
-- シーンの実行
-
-### センサー情報
-- 温度
-- 湿度
-- 明るさ
-- モーション
-
-## 開発
+## インストール
 
 ```bash
-# ビルド
-npm run build
-
-# 開発モード（TypeScript）
-npm run dev
-
-# 起動
-npm start
+npm install @genm-dev/switchbot-mcp
 ```
 
-## エラー対処
+## 設定
 
-### デバイスが応答しない場合
+### 必須
 
-1. デバイスがBluetooth範囲内にあることを確認
-2. デバイスのバッテリー状態を確認
-3. SwitchBotハブとの接続状態を確認
+- `SWITCHBOT_TOKEN`
+- `SWITCHBOT_SECRET`
 
-### 認証エラー
+### トランスポート
 
-1. トークンとシークレットキーの有効期限を確認
-2. トークンとシークレットキーを再生成
-3. 環境変数を更新
+- `MCP_TRANSPORT=stdio|http`（デフォルト: `stdio`）
+- `MCP_SERVER_API_KEY`（`http`時は必須）
+- `MCP_HTTP_HOST`（デフォルト: `127.0.0.1`）
+- `MCP_HTTP_PORT`（デフォルト: `8787`）
+- `MCP_HTTP_PATH`（デフォルト: `/mcp`）
+
+### 実行オプション
+
+- `SWITCHBOT_TIMEOUT_MS`（デフォルト: `10000`）
+- `SWITCHBOT_LIST_CACHE_TTL_MS`（デフォルト: `30000`）
+- `LOG_LEVEL=debug|info|warn|error`（デフォルト: `info`）
+
+### テスト用（任意）
+
+- `SWITCHBOT_BASE_URL`（決定論的E2E用にSwitchBot APIエンドポイントを上書き）
+
+## MCPツール（v3）
+
+1. `switchbot_list_devices`
+2. `switchbot_get_device_status`
+3. `switchbot_set_power`
+4. `switchbot_send_command`
+5. `switchbot_list_scenes`
+6. `switchbot_execute_scene`
+7. `switchbot_list_devices_raw`（上級者向け: 上流の生フィールドを返却）
+
+移行手順は [docs/migration-v2-to-v3.md](./docs/migration-v2-to-v3.md) を参照してください。
+
+## 使い方
+
+### stdio（package / npx）
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "npx",
+      "args": ["-y", "@genm-dev/switchbot-mcp"],
+      "env": {
+        "SWITCHBOT_TOKEN": "...",
+        "SWITCHBOT_SECRET": "...",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### stdio（ローカルbuild）
+
+```json
+{
+  "mcpServers": {
+    "switchbot": {
+      "command": "node",
+      "args": ["/absolute/path/to/build/index.js"],
+      "env": {
+        "SWITCHBOT_TOKEN": "...",
+        "SWITCHBOT_SECRET": "...",
+        "MCP_TRANSPORT": "stdio"
+      }
+    }
+  }
+}
+```
+
+### HTTP（Streamable HTTP）
+
+```bash
+MCP_TRANSPORT=http \
+MCP_SERVER_API_KEY=your_api_key \
+SWITCHBOT_TOKEN=... \
+SWITCHBOT_SECRET=... \
+npx -y @genm-dev/switchbot-mcp
+```
+
+エンドポイント: `http://127.0.0.1:8787/mcp`
+
+### 代替インストール（Smithery）
+
+```bash
+npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
+```
+
+## テスト戦略
+
+### 必須ゲート（決定論的）
+
+```bash
+npm run check
+npm run test:coverage
+```
+
+`npm run check` は型・lint・format、MCPプロトコル/トランスポート、build、
+package metadata、pack後のインストール/実行を検証します。
+`npm run test:coverage` はカバレッジ下限を強制します。
+
+Docker実行環境を変更した場合は、次も実行してください。
+
+```bash
+npm run smoke:container
+```
+
+設定欠落時の失敗、HTTP認証、MCP initialize、非root実行を実コンテナで検証します。
+
+### 任意: Liveテスト（実SwitchBot API）
+
+実APIへの接続確認をしたい場合のみ、手元の資格情報で実行してください。
+
+```bash
+SWITCHBOT_TOKEN=... SWITCHBOT_SECRET=... npm run test:live
+```
+
+- モックではなく実SwitchBot APIを利用
+- 読み取り系のみ（`list_devices` / `list_scenes`）
+- 資格情報がない場合は Live テストはスキップされます
+
+## MCP Inspector（手動デバッグ）
+
+Inspector はローカルでの手動デバッグ専用です。外部ネットワークへ公開しないでください。
+
+```bash
+npx @modelcontextprotocol/inspector node build/index.js
+```
+
+環境変数を渡す場合:
+
+```bash
+npx @modelcontextprotocol/inspector \
+  -e SWITCHBOT_TOKEN=... \
+  -e SWITCHBOT_SECRET=... \
+  -e MCP_TRANSPORT=stdio \
+  -- node build/index.js
+```
+
+このリポジトリでは Inspector を依存固定しません。`npx` で最新版を利用してください。
+
+## メンテナ向けドキュメント
+
+- [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [docs/github-flow.md](./docs/github-flow.md)
+- [docs/release-process.md](./docs/release-process.md)
+
+## Secrets運用方針
+
+機密情報の正本は `AWS Secrets Manager` / `AWS SSM Parameter Store` / `Doppler` を推奨します。
+実行時の環境変数注入はサポートしますが、平文 `.env` の常用は推奨しません。
 
 ## ライセンス
 

@@ -16,6 +16,7 @@ out/
 
 # Logs
 logs/
+reports/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -42,6 +43,8 @@ Thumbs.db
 !package.json
 !tsconfig.json
 !package-lock.json
+!.oxfmtrc.json
+!server.json
 config.json
 token.json
 devices.json

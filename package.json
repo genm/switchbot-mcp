@@ -1,33 +1,84 @@
 {
-  "name": "@genm/switchbot-mcp",
-  "version": "1.0.0",
-  "description": "SwitchBot API MCP Server - Provides SwitchBot device control for AI assistants",
-  "main": "build/index.js",
-  "type": "module",
-  "scripts": {
-    "build": "tsc && chmod +x build/index.js",
-    "start": "node build/index.js",
-    "dev": "ts-node --esm src/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "name": "@genm-dev/switchbot-mcp",
+  "version": "3.0.0",
+  "description": "Modern SwitchBot MCP server with stdio and Streamable HTTP transports",
   "keywords": [
     "mcp",
     "switchbot"
   ],
-  "author": "genm",
+  "homepage": "https://github.com/genm/switchbot-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/genm/switchbot-mcp/issues"
+  },
   "license": "ISC",
+  "author": "genm",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/genm/mcps.git"
+    "url": "git+https://github.com/genm/switchbot-mcp.git"
   },
+  "bin": {
+    "switchbot-mcp": "build/index.js"
+  },
+  "files": [
+    "build",
+    "docs/migration-v2-to-v3.md",
+    "server.json",
+    "README.md",
+    "README.ja.md",
+    "LICENSE"
+  ],
+  "type": "module",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x build/index.js",
+    "start": "node build/index.js",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:ci": "vitest run --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml",
+    "test:coverage": "vitest run --coverage",
+    "test:contract": "vitest run tests/mcp tests/transports",
+    "test:unit": "vitest run --exclude 'tests/**/**e2e.test.ts'",
+    "test:integration": "vitest run tests/mcp/stdio-e2e.test.ts tests/transports/http-e2e.test.ts",
+    "test:e2e": "vitest run tests/mcp/stdio-e2e.test.ts tests/transports/http-e2e.test.ts",
+    "test:live": "vitest run tests/live/switchbot-live.test.ts",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run format && npm run test && npm run build && npm run lint:package && npm run smoke:package",
+    "lint": "oxlint .",
+    "lint:package": "publint",
+    "format": "oxfmt --check .",
+    "format:write": "oxfmt .",
+    "hooks:install": "lefthook install",
+    "smoke:container": "bash scripts/ci/verify-container.sh",
+    "smoke:package": "node scripts/ci/verify-package.mjs",
+    "commitlint": "commitlint --edit",
+    "guard:rebase": "bash scripts/hooks/check-rebase-before-push.sh",
+    "labels:sync": "bash scripts/github/sync-labels.sh"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.4.1",
-    "axios": "^1.6.2",
-    "@types/node": "^20.10.4",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
-  }
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^4.1.10",
+    "lefthook": "^2.1.10",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "publint": "^0.3.22",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=24.15.0",
+    "npm": ">=11"
+  },
+  "packageManager": "npm@11.19.0",
+  "mcpName": "io.github.genm/switchbot-mcp"
 }

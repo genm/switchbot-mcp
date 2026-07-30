@@ -5,7 +5,6 @@ build:
 startCommand:
   type: stdio
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
     type: object
     required:
       - switchbotToken
@@ -13,11 +12,30 @@ startCommand:
     properties:
       switchbotToken:
         type: string
-        description: The API token for accessing SwitchBot services.
+        description: SwitchBot Open API token.
       switchbotSecret:
         type: string
-        description: The API secret for accessing SwitchBot services.
-  commandFunction:
-    # A function that produces the CLI command to start the MCP on stdio.
-    |-
-    (config) => ({ command: 'node', args: ['build/index.js'], env: { SWITCHBOT_TOKEN: config.switchbotToken, SWITCHBOT_SECRET: config.switchbotSecret } })
+        description: SwitchBot Open API secret.
+      switchbotTimeoutMs:
+        type: number
+        description: HTTP timeout in milliseconds (default 10000).
+      switchbotListCacheTtlMs:
+        type: number
+        description: Cache TTL for list tools in milliseconds (default 30000).
+      logLevel:
+        type: string
+        enum: [debug, info, warn, error]
+        description: Log level (default info).
+  commandFunction: |-
+    (config) => ({
+      command: 'node',
+      args: ['build/index.js'],
+      env: {
+        SWITCHBOT_TOKEN: config.switchbotToken,
+        SWITCHBOT_SECRET: config.switchbotSecret,
+        SWITCHBOT_TIMEOUT_MS: String(config.switchbotTimeoutMs ?? 10000),
+        SWITCHBOT_LIST_CACHE_TTL_MS: String(config.switchbotListCacheTtlMs ?? 30000),
+        LOG_LEVEL: config.logLevel ?? 'info',
+        MCP_TRANSPORT: 'stdio'
+      }
+    })
