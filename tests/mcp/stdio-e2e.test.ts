@@ -56,7 +56,7 @@ describe("stdio e2e", () => {
     await mock?.close();
   });
 
-  it("executes all v2 tools through stdio process and enforces cache behavior", async () => {
+  it("executes all v3 tools through stdio process and enforces cache behavior", async () => {
     const listedTools = await client.listTools();
     const names = listedTools.tools.map((t) => t.name).sort();
 
@@ -172,8 +172,8 @@ async function startMockSwitchBotServer(): Promise<MockSwitchBotServer> {
             {
               deviceId: "remote-1",
               deviceName: "TV Remote",
-              deviceType: "TV",
-              enableCloudService: true,
+              remoteType: "TV",
+              hubDeviceId: "hub-1",
             },
           ],
         },

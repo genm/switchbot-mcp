@@ -1,23 +1,33 @@
 # @genm-dev/switchbot-mcp
 
-AIアシスタント向けの SwitchBot MCP Server v2 です。
+AIアシスタント向けの SwitchBot MCP Server v3 です。
 
 [![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
+[![npm version](https://img.shields.io/npm/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![Node.js](https://img.shields.io/node/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![License](https://img.shields.io/npm/l/@genm-dev/switchbot-mcp.svg)](./LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-ready-5A67D8.svg)](./server.json)
+[![CI](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml)
 
 [English](./README.md)
 
 ## クイックインストール
 
-### Cursor（ワンクリック）
+### ワンクリックインストール
 
 [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22switchbot%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40genm-dev%2Fswitchbot-mcp%22%5D%2C%22env%22%3A%7B%22SWITCHBOT_TOKEN%22%3A%22YOUR_SWITCHBOT_TOKEN%22%2C%22SWITCHBOT_SECRET%22%3A%22YOUR_SWITCHBOT_SECRET%22%2C%22MCP_TRANSPORT%22%3A%22stdio%22%7D%7D)
 
-インストール後、Cursor 側で `SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を設定してください。
+インストール後、`SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を実際の資格情報へ
+置き換えてください。ボタンは公開npm packageを`npx`経由で設定します。起動前に
+設定内容を確認してください。
 
 ### VS Code
 
 ```bash
-code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}}'
+code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}'
 ```
 
 ### Claude Desktop
@@ -40,16 +50,17 @@ code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-
 
 ## 概要
 
-- v2.0.0（破壊的変更あり）
+- Node.js 24 LTS を基盤とする v3.0.0
+- 標準 `fetch` と厳密な上流レスポンス検証
 - レイヤー分離（SwitchBotクライアント / MCPツール / トランスポート）
 - `stdio` と Streamable HTTP を正式サポート
 - HTTPモードは APIキー必須
 - 全ツールで `structuredContent` を返却
-- polyrepo前提の gated 運用でOSS保守性を重視
+- 対応ランタイム・配布パッケージ・コンテナを横断する公開repo向けCI
 
 ## 必要条件
 
-- Node.js 22+
+- Node.js 24.15+
 - SwitchBot Open API の token / secret
 
 ## インストール
@@ -83,7 +94,7 @@ npm install @genm-dev/switchbot-mcp
 
 - `SWITCHBOT_BASE_URL`（決定論的E2E用にSwitchBot APIエンドポイントを上書き）
 
-## MCPツール（v2）
+## MCPツール（v3）
 
 1. `switchbot_list_devices`
 2. `switchbot_get_device_status`
@@ -93,7 +104,7 @@ npm install @genm-dev/switchbot-mcp
 6. `switchbot_execute_scene`
 7. `switchbot_list_devices_raw`（上級者向け: 上流の生フィールドを返却）
 
-移行手順は [docs/migration-v1-to-v2.md](./docs/migration-v1-to-v2.md) を参照してください。
+移行手順は [docs/migration-v2-to-v3.md](./docs/migration-v2-to-v3.md) を参照してください。
 
 ## 使い方
 
@@ -156,14 +167,21 @@ npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
 ### 必須ゲート（決定論的）
 
 ```bash
-npm run typecheck
-npm run lint
-npm run format
-npm run test
-npm run build
+npm run check
+npm run test:coverage
 ```
 
-`npm run test` には stdio / HTTP の実プロセスE2Eが含まれます。
+`npm run check` は型・lint・format、MCPプロトコル/トランスポート、build、
+package metadata、pack後のインストール/実行を検証します。
+`npm run test:coverage` はカバレッジ下限を強制します。
+
+Docker実行環境を変更した場合は、次も実行してください。
+
+```bash
+npm run smoke:container
+```
+
+設定欠落時の失敗、HTTP認証、MCP initialize、非root実行を実コンテナで検証します。
 
 ### 任意: Liveテスト（実SwitchBot API）
 
@@ -200,7 +218,7 @@ npx @modelcontextprotocol/inspector \
 ## メンテナ向けドキュメント
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [docs/gated-github-flow.md](./docs/gated-github-flow.md)
+- [docs/github-flow.md](./docs/github-flow.md)
 - [docs/release-process.md](./docs/release-process.md)
 
 ## Secrets運用方針

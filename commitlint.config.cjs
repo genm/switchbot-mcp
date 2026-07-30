@@ -4,7 +4,8 @@ module.exports = {
     {
       rules: {
         "is-ascii": ({ header, body, footer }) => {
-          const isAscii = (str) => !str || /^[\x00-\x7F]*$/.test(str);
+          const isAscii = (str) =>
+            !str || [...str].every((character) => character.codePointAt(0) <= 0x7f);
           return [
             isAscii(header) && isAscii(body) && isAscii(footer),
             "Commit message must be in English (ASCII only)",

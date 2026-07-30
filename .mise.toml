@@ -1,10 +1,10 @@
 [tools]
-node = "22"
+node = "24"
 
 [tasks.setup]
 description = "Install dependencies and Git hooks"
-run = "npm install && npx lefthook install"
+run = "npm install && npm run hooks:install"
 
 [tasks.ci]
 description = "Run all CI checks"
-run = "npm ci && npm run lint && npm run format && npm run typecheck && npm run test && npm run build"
+run = "npm ci --ignore-scripts && npm run check && npm run test:coverage"

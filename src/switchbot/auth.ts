@@ -23,10 +23,7 @@ export function createSwitchBotAuthHeaders({
   const t = now().toString();
   const nonce = nonceFactory();
   const stringToSign = `${token}${t}${nonce}`;
-  const sign = crypto
-    .createHmac("sha256", secret)
-    .update(stringToSign, "utf8")
-    .digest("base64");
+  const sign = crypto.createHmac("sha256", secret).update(stringToSign, "utf8").digest("base64");
 
   return {
     Authorization: token,

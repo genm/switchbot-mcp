@@ -5,7 +5,7 @@ const TransportSchema = z.enum(["stdio", "http"]);
 const EnvSchema = z.object({
   SWITCHBOT_TOKEN: z.string().min(1, "SWITCHBOT_TOKEN is required"),
   SWITCHBOT_SECRET: z.string().min(1, "SWITCHBOT_SECRET is required"),
-  SWITCHBOT_BASE_URL: z.string().url().optional(),
+  SWITCHBOT_BASE_URL: z.url().optional(),
   MCP_TRANSPORT: TransportSchema.default("stdio"),
   MCP_SERVER_API_KEY: z.string().optional(),
   MCP_HTTP_HOST: z.string().default("127.0.0.1"),
@@ -46,7 +46,12 @@ export interface AppConfig {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = EnvSchema.safeParse(env);
   if (!parsed.success) {
-    const message = parsed.error.issues.map((i) => i.message).join(", ");
+    const message = parsed.error.issues
+      .map((issue) => {
+        const path = issue.path.join(".") || "environment";
+        return `${path}: ${issue.message}`;
+      })
+      .join(", ");
     throw new Error(`Invalid environment configuration: ${message}`);
   }
 

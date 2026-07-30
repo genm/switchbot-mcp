@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  isAllowedHost,
-  isAuthorized,
-  requestPathMatches,
-} from "../../src/transports/http.js";
+import { isAllowedHost, isAuthorized, requestPathMatches } from "../../src/transports/http.js";
 
 function req(input: { host?: string; authorization?: string; url?: string }) {
   return {
@@ -23,23 +19,15 @@ describe("HTTP transport guards", () => {
   });
 
   it("validates bearer auth", () => {
-    expect(isAuthorized(req({ authorization: "Bearer abc" }), "abc")).toBe(
-      true,
-    );
-    expect(isAuthorized(req({ authorization: "Bearer def" }), "abc")).toBe(
-      false,
-    );
+    expect(isAuthorized(req({ authorization: "Bearer abc" }), "abc")).toBe(true);
+    expect(isAuthorized(req({ authorization: "Bearer def" }), "abc")).toBe(false);
   });
 
   it("validates host header against localhost constraints", () => {
-    expect(
-      isAllowedHost(req({ host: "127.0.0.1:8787" }), "127.0.0.1", 8787),
-    ).toBe(true);
-    expect(
-      isAllowedHost(req({ host: "localhost:8787" }), "127.0.0.1", 8787),
-    ).toBe(true);
-    expect(
-      isAllowedHost(req({ host: "evil.example:8787" }), "127.0.0.1", 8787),
-    ).toBe(false);
+    expect(isAllowedHost(req({ host: "127.0.0.1:8787" }), "127.0.0.1")).toBe(true);
+    expect(isAllowedHost(req({ host: "localhost:18787" }), "127.0.0.1")).toBe(true);
+    expect(isAllowedHost(req({ host: "evil.example:8787" }), "127.0.0.1")).toBe(false);
+    expect(isAllowedHost(req({ host: "[::1]:8787" }), "::1")).toBe(true);
+    expect(isAllowedHost(req({ host: "not a host" }), "127.0.0.1")).toBe(false);
   });
 });

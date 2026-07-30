@@ -1,6 +1,6 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 
-import { Logger } from "../logger.js";
+import type { Logger } from "../logger.js";
 import { createSwitchBotMcpServer } from "../mcp/server.js";
 
 export async function startStdioServer(

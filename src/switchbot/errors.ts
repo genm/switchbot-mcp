@@ -1,5 +1,3 @@
-import axios, { AxiosError } from "axios";
-
 export class SwitchBotHttpError extends Error {
   constructor(
     message: string,
@@ -8,6 +6,13 @@ export class SwitchBotHttpError extends Error {
   ) {
     super(message);
     this.name = "SwitchBotHttpError";
+  }
+}
+
+export class SwitchBotProtocolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "SwitchBotProtocolError";
   }
 }
 
@@ -24,41 +29,19 @@ export class SwitchBotApiError extends Error {
 export function normalizeSwitchBotError(error: unknown): Error {
   if (
     error instanceof SwitchBotApiError ||
-    error instanceof SwitchBotHttpError
+    error instanceof SwitchBotHttpError ||
+    error instanceof SwitchBotProtocolError
   ) {
     return error;
   }
 
-  if (axios.isAxiosError(error)) {
-    return normalizeAxiosError(error);
+  if (error instanceof DOMException && error.name === "TimeoutError") {
+    return new SwitchBotHttpError("SwitchBot API request timed out", undefined, "ETIMEDOUT");
   }
 
   if (error instanceof Error) {
-    return error;
+    return new SwitchBotHttpError(error.message, undefined, error.name);
   }
 
   return new Error("Unknown SwitchBot error");
-}
-
-function normalizeAxiosError(error: AxiosError): SwitchBotHttpError {
-  if (error.response) {
-    const message =
-      extractMessage(error.response.data) ?? `HTTP ${error.response.status}`;
-    return new SwitchBotHttpError(message, error.response.status, error.code);
-  }
-
-  return new SwitchBotHttpError(error.message, undefined, error.code);
-}
-
-function extractMessage(data: unknown): string | undefined {
-  if (!data || typeof data !== "object") {
-    return undefined;
-  }
-
-  const candidate = data as Record<string, unknown>;
-  if (typeof candidate.message === "string") {
-    return candidate.message;
-  }
-
-  return undefined;
 }

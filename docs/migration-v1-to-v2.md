@@ -9,14 +9,14 @@
 
 ## Tool mapping
 
-| v1 tool | v2 tool |
-| --- | --- |
-| `list_devices` | `switchbot_list_devices` |
-| `get_device_status` | `switchbot_get_device_status` |
-| `control_device` | `switchbot_set_power` or `switchbot_send_command` |
-| N/A | `switchbot_list_scenes` |
-| N/A | `switchbot_execute_scene` |
-| N/A | `switchbot_list_devices_raw` (advanced/raw) |
+| v1 tool             | v2 tool                                           |
+| ------------------- | ------------------------------------------------- |
+| `list_devices`      | `switchbot_list_devices`                          |
+| `get_device_status` | `switchbot_get_device_status`                     |
+| `control_device`    | `switchbot_set_power` or `switchbot_send_command` |
+| N/A                 | `switchbot_list_scenes`                           |
+| N/A                 | `switchbot_execute_scene`                         |
+| N/A                 | `switchbot_list_devices_raw` (advanced/raw)       |
 
 ## Input/output updates
 

@@ -1,23 +1,33 @@
 # @genm-dev/switchbot-mcp
 
-SwitchBot MCP Server v2 for AI assistants.
+SwitchBot MCP Server v3 for AI assistants.
 
 [![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
+[![npm version](https://img.shields.io/npm/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![Node.js](https://img.shields.io/node/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
+[![License](https://img.shields.io/npm/l/@genm-dev/switchbot-mcp.svg)](./LICENSE)
+[![MCP Registry](https://img.shields.io/badge/MCP_Registry-ready-5A67D8.svg)](./server.json)
+[![CI](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml)
 
 [日本語](./README.ja.md)
 
 ## Quick Install
 
-### Cursor (one click)
+### One-click install
 
 [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
+[![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22switchbot%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40genm-dev%2Fswitchbot-mcp%22%5D%2C%22env%22%3A%7B%22SWITCHBOT_TOKEN%22%3A%22YOUR_SWITCHBOT_TOKEN%22%2C%22SWITCHBOT_SECRET%22%3A%22YOUR_SWITCHBOT_SECRET%22%2C%22MCP_TRANSPORT%22%3A%22stdio%22%7D%7D)
 
-Set `SWITCHBOT_TOKEN` and `SWITCHBOT_SECRET` in Cursor after installation.
+Replace `SWITCHBOT_TOKEN` and `SWITCHBOT_SECRET` with your credentials after
+installation. The links install the public npm package through `npx`; review the
+configuration before starting the server.
 
 ### VS Code
 
 ```bash
-code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}}'
+code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/switchbot-mcp"],"env":{"SWITCHBOT_TOKEN":"YOUR_SWITCHBOT_TOKEN","SWITCHBOT_SECRET":"YOUR_SWITCHBOT_SECRET","MCP_TRANSPORT":"stdio"}}'
 ```
 
 ### Claude Desktop
@@ -40,16 +50,17 @@ code --add-mcp '{"switchbot":{"command":"npx","args":["-y","@genm-dev/switchbot-
 
 ## Highlights
 
-- v2.0.0 with breaking changes
+- v3.0.0 on the Node.js 24 LTS platform
+- Native `fetch` with strict upstream response validation
 - Layered architecture (SwitchBot client / MCP tools / transports)
 - `stdio` and Streamable HTTP transports
 - API key required for HTTP transport
 - Structured MCP tool outputs (`structuredContent`)
-- Polyrepo-first gated flow for maintainable OSS operations
+- Public-repository CI across supported runtimes, package artifacts, and containers
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 24.15+
 - SwitchBot Open API token and secret
 
 ## Install
@@ -83,7 +94,7 @@ npm install @genm-dev/switchbot-mcp
 
 - `SWITCHBOT_BASE_URL` (override SwitchBot API endpoint for deterministic e2e tests)
 
-## MCP tools (v2)
+## MCP tools (v3)
 
 1. `switchbot_list_devices`
 2. `switchbot_get_device_status`
@@ -93,7 +104,7 @@ npm install @genm-dev/switchbot-mcp
 6. `switchbot_execute_scene`
 7. `switchbot_list_devices_raw` (advanced, raw upstream fields)
 
-See migration details: [docs/migration-v1-to-v2.md](./docs/migration-v1-to-v2.md)
+See migration details: [docs/migration-v2-to-v3.md](./docs/migration-v2-to-v3.md)
 
 ## Usage
 
@@ -156,14 +167,22 @@ npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
 ### Required gates (deterministic)
 
 ```bash
-npm run typecheck
-npm run lint
-npm run format
-npm run test
-npm run build
+npm run check
+npm run test:coverage
 ```
 
-`npm run test` includes stdio and HTTP process e2e tests.
+`npm run check` includes type-checking, linting, formatting, MCP protocol and
+transport tests, a build, package metadata validation, and installation/execution
+of the packed artifact. `npm run test:coverage` enforces coverage thresholds.
+
+When changing the Docker runtime, also run:
+
+```bash
+npm run smoke:container
+```
+
+This verifies missing-configuration failure, HTTP authentication, MCP
+initialization, and the non-root runtime user.
 
 ### Optional live test (real SwitchBot API)
 
@@ -200,7 +219,7 @@ This repository does not pin Inspector as a dependency. Use `npx` to get the lat
 ## Maintainer docs
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [docs/gated-github-flow.md](./docs/gated-github-flow.md)
+- [docs/github-flow.md](./docs/github-flow.md)
 - [docs/release-process.md](./docs/release-process.md)
 
 ## Secrets management policy

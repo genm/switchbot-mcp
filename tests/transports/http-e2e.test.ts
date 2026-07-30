@@ -29,26 +29,22 @@ describe("http e2e", () => {
     mockSwitchBot = await startMockSwitchBotServer();
     mcpPort = await findFreePort();
 
-    serverProcess = spawn(
-      process.execPath,
-      [require.resolve("tsx/cli"), "src/index.ts"],
-      {
-        cwd: process.cwd(),
-        env: normalizeEnv({
-          ...process.env,
-          SWITCHBOT_TOKEN: "test-token",
-          SWITCHBOT_SECRET: "test-secret",
-          SWITCHBOT_BASE_URL: `http://127.0.0.1:${mockSwitchBot.port}/v1.1`,
-          MCP_TRANSPORT: "http",
-          MCP_SERVER_API_KEY: API_KEY,
-          MCP_HTTP_HOST: "127.0.0.1",
-          MCP_HTTP_PORT: String(mcpPort),
-          MCP_HTTP_PATH: MCP_PATH,
-          LOG_LEVEL: "error",
-        }),
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    serverProcess = spawn(process.execPath, [require.resolve("tsx/cli"), "src/index.ts"], {
+      cwd: process.cwd(),
+      env: normalizeEnv({
+        ...process.env,
+        SWITCHBOT_TOKEN: "test-token",
+        SWITCHBOT_SECRET: "test-secret",
+        SWITCHBOT_BASE_URL: `http://127.0.0.1:${mockSwitchBot.port}/v1.1`,
+        MCP_TRANSPORT: "http",
+        MCP_SERVER_API_KEY: API_KEY,
+        MCP_HTTP_HOST: "127.0.0.1",
+        MCP_HTTP_PORT: String(mcpPort),
+        MCP_HTTP_PATH: MCP_PATH,
+        LOG_LEVEL: "error",
+      }),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
     await waitForHttpServer(mcpPort, MCP_PATH);
   });

@@ -21,13 +21,13 @@ const listDevicesOutputSchema = z.object({
 });
 
 const listDevicesRawOutputSchema = z.object({
-  devices: z.array(z.record(z.unknown())),
+  devices: z.array(z.record(z.string(), z.unknown())),
 });
 
 const getDeviceStatusOutputSchema = z.object({
   deviceId: z.string(),
   deviceType: z.string(),
-  rawStatus: z.record(z.unknown()),
+  rawStatus: z.record(z.string(), z.unknown()),
 });
 
 const setPowerOutputSchema = z.object({
@@ -58,6 +58,13 @@ const executeSceneOutputSchema = z.object({
   accepted: z.boolean(),
 });
 
+type NormalizedDevice = z.infer<typeof listDevicesOutputSchema>["devices"][number];
+
+interface DeviceFilter {
+  nameQuery?: string;
+  deviceType?: string;
+}
+
 export interface ToolRegistrationOptions {
   server: McpServer;
   switchBotClient: SwitchBotClient;
@@ -83,47 +90,20 @@ export function registerTools(options: ToolRegistrationOptions): void {
       try {
         const includeInfrared = args.includeInfrared ?? false;
         const cacheKey = `${DEVICE_LIST_CACHE_KEY}:${includeInfrared}`;
-        const cached = cache.get(cacheKey) as
-          | z.infer<typeof listDevicesOutputSchema>
-          | undefined;
-        if (cached) {
-          return successResult(
-            `Found ${cached.devices.length} devices (cached).`,
-            cached,
-          );
+        let normalized = cache.get(cacheKey) as NormalizedDevice[] | undefined;
+        const wasCached = normalized !== undefined;
+        if (!normalized) {
+          const devices = await switchBotClient.listDevices(includeInfrared);
+          normalized = devices
+            .map((device) => normalizeDevice(device as unknown as Record<string, unknown>))
+            .filter((device): device is NormalizedDevice => device !== null);
+          cache.set(cacheKey, normalized, listCacheTtlMs);
         }
 
-        const devices = await switchBotClient.listDevices(includeInfrared);
-        const normalized = devices
-          .map((device) =>
-            normalizeDevice(device as unknown as Record<string, unknown>),
-          )
-          .filter(
-            (
-              device,
-            ): device is z.infer<typeof listDevicesOutputSchema>["devices"][number] =>
-              device !== null,
-          );
-        const filtered = normalized.filter((device) => {
-          if (args.deviceType && device.deviceType !== args.deviceType) {
-            return false;
-          }
-
-          if (
-            args.nameQuery &&
-            !device.deviceName
-              .toLowerCase()
-              .includes(args.nameQuery.toLowerCase())
-          ) {
-            return false;
-          }
-
-          return true;
-        });
-
+        const filtered = filterNormalizedDevices(normalized, args);
         const output = { devices: filtered };
-        cache.set(cacheKey, output, listCacheTtlMs);
-        return successResult(`Found ${filtered.length} devices.`, output);
+        const cacheNote = wasCached ? " (cached)" : "";
+        return successResult(`Found ${filtered.length} devices${cacheNote}.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -133,8 +113,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
   server.registerTool(
     "switchbot_list_devices_raw",
     {
-      description:
-        "List SwitchBot devices with raw upstream fields (advanced/unstable)",
+      description: "List SwitchBot devices with raw upstream fields (advanced/unstable)",
       inputSchema: {
         includeInfrared: z.boolean().optional(),
         nameQuery: z.string().optional(),
@@ -146,47 +125,21 @@ export function registerTools(options: ToolRegistrationOptions): void {
       try {
         const includeInfrared = args.includeInfrared ?? false;
         const cacheKey = `${DEVICE_LIST_CACHE_KEY}:raw:${includeInfrared}`;
-        const cached = cache.get(cacheKey) as
-          | z.infer<typeof listDevicesRawOutputSchema>
-          | undefined;
-        if (cached) {
-          return successResult(
-            `Found ${cached.devices.length} raw devices (cached).`,
-            cached,
-          );
+        const cachedDevices = cache.get(cacheKey) as Array<Record<string, unknown>> | undefined;
+        const devices: Array<Record<string, unknown>> =
+          cachedDevices ??
+          (await switchBotClient
+            .listDevices(includeInfrared)
+            .then((items) => items as unknown as Array<Record<string, unknown>>));
+        const wasCached = cachedDevices !== undefined;
+        if (!wasCached) {
+          cache.set(cacheKey, devices, listCacheTtlMs);
         }
 
-        const devices = await switchBotClient.listDevices(includeInfrared).then(
-          (items) => items as unknown as Array<Record<string, unknown>>,
-        );
-
-        const filtered = devices.filter((device) => {
-          if (args.deviceType) {
-            const currentType =
-              typeof device.deviceType === "string"
-                ? device.deviceType
-                : typeof device.remoteType === "string"
-                  ? device.remoteType
-                  : undefined;
-            if (currentType !== args.deviceType) {
-              return false;
-            }
-          }
-
-          if (args.nameQuery) {
-            const currentName =
-              typeof device.deviceName === "string" ? device.deviceName : "";
-            if (!currentName.toLowerCase().includes(args.nameQuery.toLowerCase())) {
-              return false;
-            }
-          }
-
-          return true;
-        });
-
+        const filtered = filterRawDevices(devices, args);
         const output = { devices: filtered };
-        cache.set(cacheKey, output, listCacheTtlMs);
-        return successResult(`Found ${filtered.length} raw devices.`, output);
+        const cacheNote = wasCached ? " (cached)" : "";
+        return successResult(`Found ${filtered.length} raw devices${cacheNote}.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -207,10 +160,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
         const rawStatus = await switchBotClient.getDeviceStatus(args.deviceId);
         const output = {
           deviceId: args.deviceId,
-          deviceType:
-            typeof rawStatus.deviceType === "string"
-              ? rawStatus.deviceType
-              : "unknown",
+          deviceType: typeof rawStatus.deviceType === "string" ? rawStatus.deviceType : "unknown",
           rawStatus,
         };
         return successResult(`Fetched status for ${args.deviceId}.`, output);
@@ -236,10 +186,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
         await switchBotClient.sendCommand({ deviceId: args.deviceId, command });
         invalidateListCaches(cache);
         const output = { deviceId: args.deviceId, command, accepted: true };
-        return successResult(
-          `Power ${args.power} accepted for ${args.deviceId}.`,
-          output,
-        );
+        return successResult(`Power ${args.power} accepted for ${args.deviceId}.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -276,10 +223,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
           commandType,
           accepted: true,
         };
-        return successResult(
-          `Command ${args.command} accepted for ${args.deviceId}.`,
-          output,
-        );
+        return successResult(`Command ${args.command} accepted for ${args.deviceId}.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -299,10 +243,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
           | z.infer<typeof listScenesOutputSchema>
           | undefined;
         if (cached) {
-          return successResult(
-            `Found ${cached.scenes.length} scenes (cached).`,
-            cached,
-          );
+          return successResult(`Found ${cached.scenes.length} scenes (cached).`, cached);
         }
 
         const scenes = await switchBotClient.listScenes();
@@ -329,10 +270,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
         await switchBotClient.executeScene(args.sceneId);
         invalidateListCaches(cache);
         const output = { sceneId: args.sceneId, accepted: true };
-        return successResult(
-          `Scene ${args.sceneId} execution accepted.`,
-          output,
-        );
+        return successResult(`Scene ${args.sceneId} execution accepted.`, output);
       } catch (error) {
         return errorResult(error);
       }
@@ -344,14 +282,12 @@ function invalidateListCaches(cache: TtlCache<unknown>): void {
   cache.clear();
 }
 
-function normalizeDevice(
-  device: Record<string, unknown>,
-): z.infer<typeof listDevicesOutputSchema>["devices"][number] | null {
+function normalizeDevice(device: Record<string, unknown>): NormalizedDevice | null {
   if (typeof device.deviceId !== "string" || typeof device.deviceName !== "string") {
     return null;
   }
 
-  const output: z.infer<typeof listDevicesOutputSchema>["devices"][number] = {
+  const output: NormalizedDevice = {
     deviceId: device.deviceId,
     deviceName: device.deviceName,
     deviceType:
@@ -361,9 +297,7 @@ function normalizeDevice(
           ? device.remoteType
           : "unknown",
     enableCloudService:
-      typeof device.enableCloudService === "boolean"
-        ? device.enableCloudService
-        : false,
+      typeof device.enableCloudService === "boolean" ? device.enableCloudService : false,
   };
 
   if (typeof device.hubDeviceId === "string") {
@@ -371,4 +305,41 @@ function normalizeDevice(
   }
 
   return output;
+}
+
+function filterNormalizedDevices(
+  devices: NormalizedDevice[],
+  filter: DeviceFilter,
+): NormalizedDevice[] {
+  return devices.filter((device) => {
+    if (filter.deviceType && device.deviceType !== filter.deviceType) {
+      return false;
+    }
+
+    return (
+      !filter.nameQuery || device.deviceName.toLowerCase().includes(filter.nameQuery.toLowerCase())
+    );
+  });
+}
+
+function filterRawDevices(
+  devices: Array<Record<string, unknown>>,
+  filter: DeviceFilter,
+): Array<Record<string, unknown>> {
+  return devices.filter((device) => {
+    if (filter.deviceType) {
+      const currentType =
+        typeof device.deviceType === "string"
+          ? device.deviceType
+          : typeof device.remoteType === "string"
+            ? device.remoteType
+            : undefined;
+      if (currentType !== filter.deviceType) {
+        return false;
+      }
+    }
+
+    const currentName = typeof device.deviceName === "string" ? device.deviceName : "";
+    return !filter.nameQuery || currentName.toLowerCase().includes(filter.nameQuery.toLowerCase());
+  });
 }

@@ -1,9 +1,11 @@
 export interface SwitchBotDevice {
   deviceId: string;
   deviceName: string;
-  deviceType: string;
-  enableCloudService: boolean;
+  deviceType?: string;
+  remoteType?: string;
+  enableCloudService?: boolean;
   hubDeviceId?: string;
+  [key: string]: unknown;
 }
 
 export interface SwitchBotScene {

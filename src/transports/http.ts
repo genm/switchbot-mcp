@@ -1,9 +1,11 @@
-import { createServer, IncomingMessage, ServerResponse } from "node:http";
+import { createServer } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { URL } from "node:url";
 
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 
-import { Logger } from "../logger.js";
+import type { Logger } from "../logger.js";
 import { createSwitchBotMcpServer } from "../mcp/server.js";
 
 export interface HttpServerOptions {
@@ -31,7 +33,7 @@ export async function startHttpServer(
         return;
       }
 
-      if (!isAllowedHost(req, options.host, options.port)) {
+      if (!isAllowedHost(req, options.host)) {
         respondJson(res, 403, { error: "Forbidden host header" });
         return;
       }
@@ -86,30 +88,37 @@ export async function startHttpServer(
   });
 }
 
-export function requestPathMatches(
-  req: IncomingMessage,
-  expectedPath: string,
-): boolean {
+export function requestPathMatches(req: IncomingMessage, expectedPath: string): boolean {
   const url = new URL(req.url ?? "/", "http://localhost");
   return url.pathname === expectedPath;
 }
 
 export function isAuthorized(req: IncomingMessage, apiKey: string): boolean {
+  const prefix = "Bearer ";
   const auth = req.headers.authorization;
-  return auth === `Bearer ${apiKey}`;
+  if (!auth?.startsWith(prefix)) {
+    return false;
+  }
+
+  const actual = Buffer.from(auth.slice(prefix.length));
+  const expected = Buffer.from(apiKey);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-export function isAllowedHost(
-  req: IncomingMessage,
-  host: string,
-  port: number,
-): boolean {
+export function isAllowedHost(req: IncomingMessage, host: string): boolean {
   const header = req.headers.host;
   if (!header) {
     return false;
   }
 
-  const hostOnly = header.split(":")[0];
+  let parsedHeader: URL;
+  try {
+    parsedHeader = new URL(`http://${header}`);
+  } catch {
+    return false;
+  }
+
+  const hostOnly = parsedHeader.hostname;
   const allowed = new Set<string>();
   allowed.add(host);
   allowed.add("localhost");
@@ -120,19 +129,11 @@ export function isAllowedHost(
     allowed.add("0.0.0.0");
   }
 
-  if (!allowed.has(hostOnly)) {
-    return false;
-  }
-
-  const parsedPort = Number(header.split(":")[1] ?? port);
-  return Number.isInteger(parsedPort) && parsedPort === port;
+  // Port mappings and reverse proxies legitimately change the public port.
+  return allowed.has(hostOnly);
 }
 
-export function respondJson(
-  res: ServerResponse,
-  statusCode: number,
-  body: unknown,
-): void {
+export function respondJson(res: ServerResponse, statusCode: number, body: unknown): void {
   const text = JSON.stringify(body);
   res.statusCode = statusCode;
   res.setHeader("Content-Type", "application/json");
