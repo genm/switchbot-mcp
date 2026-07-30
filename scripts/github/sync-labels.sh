@@ -15,9 +15,8 @@ upsert_label() {
   gh label create "$name" --repo "$REPO" --color "$color" --description "$description" --force >/dev/null
 }
 
-upsert_label "safe-to-automerge" "0E8A16" "Meets auto-merge safety criteria"
 upsert_label "manual-review" "D73A4A" "Requires manual reviewer approval"
-upsert_label "irreversible" "B60205" "Potentially irreversible change"
 upsert_label "security" "5319E7" "Security-sensitive change"
+upsert_label "dependencies" "0366D6" "Dependency update"
 
 echo "Label sync complete for ${REPO}."

@@ -10,21 +10,20 @@
 - [ ] Docs
 - [ ] CI/DevEx
 
-## Risk & Irreversible Check
+## Risk
 
-- [ ] No irreversible change (`migrations/auth/infra/config/contract`) included
-- [ ] If irreversible, `manual-review` label added and reason documented
+- [ ] Security, protocol contract, transport, and release risks are documented
+- [ ] No credentials or live device data are included
 
 ## Validation
 
-- [ ] `npm run typecheck`
-- [ ] `npm run lint`
-- [ ] `npm run format`
-- [ ] `npm run test`
-- [ ] `npm run build`
+- [ ] `npm run check`
+- [ ] A realistic failure or degraded path was exercised
+- [ ] `npm run test:coverage` when application behavior changed
+- [ ] `npm run smoke:container` when runtime/container behavior changed
 
 ## Branch/Flow Compliance
 
-- [ ] Base branch is `integration` (except promotion PR: `integration -> main`)
-- [ ] No direct merge to `main`
-- [ ] Rebased on latest `origin/integration` before push
+- [ ] Base branch is `main`
+- [ ] PR is Draft until it is ready for the complete CI matrix
+- [ ] Rebased on latest `origin/main` before push

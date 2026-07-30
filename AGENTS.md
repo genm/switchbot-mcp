@@ -34,8 +34,8 @@ This file defines repository-level operating rules for AI agents working in this
 - Commit and push promptly in worktree-based tasks.
 - If `lefthook` fails, fix the issues before continuing.
 - Before pushing from a worktree, always run:
-  - `git fetch origin integration --prune`
-  - `git rebase origin/integration`
+  - `git fetch origin main --prune`
+  - `git rebase origin/main`
 - If rebase conflicts occur, resolve them and finish rebase before pushing.
 - Create PRs only after rebase is complete.
 - After push, create a Draft PR by default.

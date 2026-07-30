@@ -2,59 +2,69 @@
 
 Thanks for contributing to `switchbot-mcp`.
 
-## Branch model (Gated GitHub Flow)
+## Branch model
 
-- `feature/*`: short-lived feature/fix branches
-- `integration`: integration gate (default branch)
-- `main`: promotion/release branch only
+- `main` is the protected default branch.
+- Use a short-lived branch for every change.
+- Open a Draft PR while work is in progress, then mark it ready for review to run
+  the complete required CI matrix.
 
-Rules:
-
-- Open PRs from `feature/*` to `integration`
-- Never merge directly to `main`
-- Promotion PRs must be `integration -> main`
+Do not push directly to `main`.
 
 ## Required local checks
 
 Run before opening/updating PRs:
 
 ```bash
-npm run typecheck
-npm run lint
-npm run format
-npm run test
-npm run build
+npm run check
+```
+
+For behavior changes, also run coverage. For runtime image changes, verify the
+actual container:
+
+```bash
+npm run test:coverage
+npm run smoke:container
 ```
 
 ## Worktree and rebase policy (required)
 
-Before push, always rebase on latest `origin/integration`:
+Before push, always rebase on latest `origin/main`:
 
 ```bash
-git fetch origin integration --prune
-git rebase origin/integration
+git fetch origin main --prune
+git rebase origin/main
 ```
 
 Do not push until all rebase conflicts are fully resolved.
 
-`lefthook` enforces this via pre-push guard.
+Install the repository hooks once with `npm run hooks:install`. `lefthook`
+then enforces this via the pre-push guard.
 
 ## CI responsibilities
 
-- `ci-lite`: feature PR safety checks
-- `ci-integration`: integration boundary checks
-- `ci-release-gate`: release/promotion checks
-- `irreversible-check`: blocks auto-promotion for risky changes
-- `main-release`: release artifact/publish flow
+- `CI`: static analysis, Node 24/26 on Linux/macOS/Windows, coverage,
+  packed-package execution, and container behavior. Protect `main` with the
+  stable `ci/required` job.
+- `Dependency review`: blocks newly introduced moderate-or-higher known
+  vulnerabilities.
+- `CodeQL`: scans ready PRs, `main`, and a weekly schedule.
+- `OpenSSF Scorecard`: reports repository supply-chain posture weekly.
+- `Scheduled verification`: catches dependency, runtime, container, and
+  optionally read-only live API drift.
+- `Release`: verifies, packs, attests, attaches, and publishes a package after a
+  GitHub Release is published.
+
+Actions are pinned to immutable commit SHAs. Dependabot updates npm dependencies
+and GitHub Actions weekly.
 
 ## Labels
 
 Maintainers use these labels:
 
-- `safe-to-automerge`
 - `manual-review`
-- `irreversible`
 - `security`
+- `dependencies`
 
 Sync labels:
 
@@ -65,8 +75,9 @@ npm run labels:sync
 ## Security reporting
 
 Do not open public issues for vulnerabilities.
-Use GitHub security advisories.
+Follow [SECURITY.md](./SECURITY.md) and use GitHub private security advisories.
 
 ## Scope note
 
-This repository is operated as a polyrepo (single service). Monorepo affected/Nx/Turbo flows are out of scope for current operations.
+This repository is operated as a polyrepo (single service). Monorepo
+affected/Nx/Turbo flows are out of scope for current operations.
