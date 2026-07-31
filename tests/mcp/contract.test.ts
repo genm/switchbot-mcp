@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 
 import { TtlCache } from "../../src/cache/ttl-cache.js";
 import { createLogger } from "../../src/logger.js";
@@ -76,6 +75,31 @@ describe("MCP tools contract", () => {
       "switchbot_send_command",
       "switchbot_set_power",
     ]);
+  });
+
+  it("describes read and mutation risk to MCP clients", async () => {
+    const tools = await client.listTools();
+    const byName = new Map(tools.tools.map((tool) => [tool.name, tool.annotations]));
+
+    expect(byName.get("switchbot_list_devices")).toEqual({
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: true,
+    });
+    expect(byName.get("switchbot_set_power")).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: true,
+    });
+    expect(byName.get("switchbot_send_command")).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    });
+    expect(byName.get("switchbot_execute_scene")).toEqual(byName.get("switchbot_send_command"));
   });
 
   it("returns structured content from tool calls", async () => {

@@ -3,7 +3,11 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { timingSafeEqual } from "node:crypto";
 import { URL } from "node:url";
 
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {
+  hostHeaderValidation,
+  NodeStreamableHTTPServerTransport,
+  originValidation,
+} from "@modelcontextprotocol/node";
 
 import type { Logger } from "../logger.js";
 import { createSwitchBotMcpServer } from "../mcp/server.js";
@@ -13,6 +17,7 @@ export interface HttpServerOptions {
   port: number;
   path: string;
   apiKey: string;
+  allowedHosts: string[];
   logger: Logger;
 }
 
@@ -20,21 +25,23 @@ export async function startHttpServer(
   mcpServer: ReturnType<typeof createSwitchBotMcpServer>,
   options: HttpServerOptions,
 ): Promise<void> {
-  const transport = new StreamableHTTPServerTransport({
+  const transport = new NodeStreamableHTTPServerTransport({
     sessionIdGenerator: undefined,
     enableJsonResponse: true,
   });
   await mcpServer.connect(transport);
+  const validateHost = hostHeaderValidation(options.allowedHosts);
+  // Origin validation is a protocol requirement; non-browser clients without Origin still pass.
+  const validateOrigin = originValidation(options.allowedHosts);
 
   const server = createServer(async (req, res) => {
     try {
-      if (!requestPathMatches(req, options.path)) {
-        respondJson(res, 404, { error: "Not Found" });
+      if (!validateHost(req, res) || !validateOrigin(req, res)) {
         return;
       }
 
-      if (!isAllowedHost(req, options.host)) {
-        respondJson(res, 403, { error: "Forbidden host header" });
+      if (!requestPathMatches(req, options.path)) {
+        respondJson(res, 404, { error: "Not Found" });
         return;
       }
 
@@ -103,34 +110,6 @@ export function isAuthorized(req: IncomingMessage, apiKey: string): boolean {
   const actual = Buffer.from(auth.slice(prefix.length));
   const expected = Buffer.from(apiKey);
   return actual.length === expected.length && timingSafeEqual(actual, expected);
-}
-
-export function isAllowedHost(req: IncomingMessage, host: string): boolean {
-  const header = req.headers.host;
-  if (!header) {
-    return false;
-  }
-
-  let parsedHeader: URL;
-  try {
-    parsedHeader = new URL(`http://${header}`);
-  } catch {
-    return false;
-  }
-
-  const hostOnly = parsedHeader.hostname;
-  const allowed = new Set<string>();
-  allowed.add(host);
-  allowed.add("localhost");
-  allowed.add("127.0.0.1");
-  allowed.add("[::1]");
-
-  if (host === "0.0.0.0") {
-    allowed.add("0.0.0.0");
-  }
-
-  // Port mappings and reverse proxies legitimately change the public port.
-  return allowed.has(hostOnly);
 }
 
 export function respondJson(res: ServerResponse, statusCode: number, body: unknown): void {

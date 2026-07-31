@@ -42,6 +42,9 @@ const apiEnvelopeSchema = z.object({
 });
 
 const unknownRecordSchema = z.record(z.string(), z.unknown());
+const RETRYABLE_READ_STATUSES = new Set([429, 502, 503, 504]);
+const MAX_READ_RETRIES = 2;
+const RETRY_BASE_DELAY_MS = 100;
 
 interface SwitchBotClientOptions {
   token: string;
@@ -123,33 +126,64 @@ export class SwitchBotClient {
     bodySchema: z.ZodType<T>,
   ): Promise<T> {
     try {
-      const authHeaders = createSwitchBotAuthHeaders({
-        token: this.options.token,
-        secret: this.options.secret,
-      });
-      const response = await fetch(`${this.baseURL}${path}`, {
-        ...init,
-        headers: {
-          Authorization: authHeaders.Authorization,
-          sign: authHeaders.sign,
-          nonce: authHeaders.nonce,
-          t: authHeaders.t,
-          "Content-Type": "application/json; charset=utf-8",
-        },
-        signal: AbortSignal.timeout(this.options.timeoutMs),
-        // SwitchBot credentials are scoped to one origin and must never follow a redirect.
-        redirect: "error",
-      });
-      const rawBody = await readJsonBody(response);
+      const deadline = Date.now() + this.options.timeoutMs;
+      let retries = 0;
 
-      if (!response.ok) {
+      while (true) {
+        const remainingMs = deadline - Date.now();
+        if (remainingMs <= 0) {
+          throw timeoutError();
+        }
+
+        const authHeaders = createSwitchBotAuthHeaders({
+          token: this.options.token,
+          secret: this.options.secret,
+        });
+        const response = await fetch(`${this.baseURL}${path}`, {
+          ...init,
+          headers: {
+            Authorization: authHeaders.Authorization,
+            sign: authHeaders.sign,
+            nonce: authHeaders.nonce,
+            t: authHeaders.t,
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          signal: AbortSignal.timeout(remainingMs),
+          // SwitchBot credentials are scoped to one origin and must never follow a redirect.
+          redirect: "error",
+        });
+        const rawBody = await readJsonBody(response);
+
+        if (response.ok) {
+          return this.unwrap(path, rawBody, bodySchema);
+        }
+
+        if (
+          init.method === "GET" &&
+          RETRYABLE_READ_STATUSES.has(response.status) &&
+          retries < MAX_READ_RETRIES
+        ) {
+          const retryDelayMs = getRetryDelayMs(response, retries);
+          if (retryDelayMs >= deadline - Date.now()) {
+            throw timeoutError();
+          }
+
+          retries += 1;
+          this.options.logger.warn("Retrying read-only SwitchBot API request", {
+            path,
+            statusCode: response.status,
+            retry: retries,
+            retryDelayMs,
+          });
+          await sleep(retryDelayMs);
+          continue;
+        }
+
         throw new SwitchBotHttpError(
           extractMessage(rawBody) ?? `HTTP ${response.status}`,
           response.status,
         );
       }
-
-      return this.unwrap(path, rawBody, bodySchema);
     } catch (error) {
       throw normalizeSwitchBotError(error);
     }
@@ -179,6 +213,32 @@ export class SwitchBotClient {
     });
     return body.data;
   }
+}
+
+function getRetryDelayMs(response: Response, retryIndex: number): number {
+  const retryAfter = response.headers.get("retry-after");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) {
+      return seconds * 1_000;
+    }
+
+    const retryAt = Date.parse(retryAfter);
+    if (Number.isFinite(retryAt)) {
+      return Math.max(0, retryAt - Date.now());
+    }
+  }
+
+  const exponentialDelay = RETRY_BASE_DELAY_MS * 2 ** retryIndex;
+  return exponentialDelay + Math.floor(Math.random() * RETRY_BASE_DELAY_MS);
+}
+
+function sleep(delayMs: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, delayMs));
+}
+
+function timeoutError(): SwitchBotHttpError {
+  return new SwitchBotHttpError("SwitchBot API request timed out", undefined, "ETIMEDOUT");
 }
 
 async function readJsonBody(response: Response): Promise<unknown> {

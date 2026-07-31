@@ -86,6 +86,56 @@ describe("SwitchBotClient", () => {
     );
   });
 
+  it("retries transient read failures within the request deadline", async () => {
+    let attempts = 0;
+    const baseURL = await startMockSwitchBotServer((_req, res) => {
+      attempts += 1;
+      if (attempts === 1) {
+        res.setHeader("Retry-After", "0");
+        respondJson(res, 503, { message: "temporarily unavailable" });
+        return;
+      }
+
+      respondJson(res, 200, {
+        statusCode: 100,
+        message: "success",
+        body: [{ sceneId: "S1", sceneName: "Scene" }],
+      });
+    });
+
+    await expect(createClient(baseURL).listScenes()).resolves.toHaveLength(1);
+    expect(attempts).toBe(2);
+  });
+
+  it("stops after the bounded number of read retries", async () => {
+    let attempts = 0;
+    const baseURL = await startMockSwitchBotServer((_req, res) => {
+      attempts += 1;
+      res.setHeader("Retry-After", "0");
+      respondJson(res, 503, { message: "temporarily unavailable" });
+    });
+
+    await expect(createClient(baseURL).listScenes()).rejects.toMatchObject({
+      name: "SwitchBotHttpError",
+      status: 503,
+    });
+    expect(attempts).toBe(3);
+  });
+
+  it("never retries mutating commands after an upstream failure", async () => {
+    let attempts = 0;
+    const baseURL = await startMockSwitchBotServer((_req, res) => {
+      attempts += 1;
+      res.setHeader("Retry-After", "0");
+      respondJson(res, 503, { message: "temporarily unavailable" });
+    });
+
+    await expect(
+      createClient(baseURL).sendCommand({ deviceId: "A", command: "turnOn" }),
+    ).rejects.toBeInstanceOf(SwitchBotHttpError);
+    expect(attempts).toBe(1);
+  });
+
   it("normalizes timeout errors", async () => {
     const baseURL = await startMockSwitchBotServer((_req, res) => {
       setTimeout(() => {

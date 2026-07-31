@@ -41,6 +41,7 @@ describe("http e2e", () => {
         MCP_HTTP_HOST: "127.0.0.1",
         MCP_HTTP_PORT: String(mcpPort),
         MCP_HTTP_PATH: MCP_PATH,
+        MCP_HTTP_ALLOWED_HOSTS: "switchbot.example.test",
         LOG_LEVEL: "error",
       }),
       stdio: ["ignore", "pipe", "pipe"],
@@ -81,6 +82,33 @@ describe("http e2e", () => {
     });
 
     expect(response.statusCode).toBe(403);
+  });
+
+  it("returns 403 for an untrusted browser origin", async () => {
+    const response = await postRaw({
+      path: MCP_PATH,
+      port: mcpPort,
+      headers: {
+        authorization: `Bearer ${API_KEY}`,
+        origin: "https://evil.example.test",
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+  });
+
+  it("accepts an explicitly allowed host and same-host origin", async () => {
+    const response = await postRaw({
+      path: MCP_PATH,
+      port: mcpPort,
+      headers: {
+        authorization: `Bearer ${API_KEY}`,
+        host: "switchbot.example.test:443",
+        origin: "https://switchbot.example.test",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
   });
 
   it("returns 404 for invalid path", async () => {

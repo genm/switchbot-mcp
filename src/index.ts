@@ -39,6 +39,7 @@ async function main(): Promise<void> {
       port: config.transport.http.port,
       path: config.transport.http.path,
       apiKey: config.transport.http.apiKey,
+      allowedHosts: config.transport.http.allowedHosts,
       logger,
     });
     return;
