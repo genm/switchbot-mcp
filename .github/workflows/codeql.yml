@@ -10,10 +10,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: read
-  packages: read
-  security-events: write
 
 concurrency:
   group: codeql-${{ github.event.pull_request.number || github.ref }}
@@ -22,6 +19,11 @@ concurrency:
 jobs:
   analyze:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer, SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/server";
 import packageJson from "../../package.json" with { type: "json" };
 
 import type { TtlCache } from "../cache/ttl-cache.js";
@@ -20,6 +20,9 @@ export function createSwitchBotMcpServer(options: CreateServerOptions): McpServe
       version: packageJson.version,
     },
     {
+      // SDK v2 keeps modern negotiation opt-in so established 2025 clients can
+      // continue using initialize while modern clients discover 2026 explicitly.
+      supportedProtocolVersions: ["2026-07-28", ...SUPPORTED_PROTOCOL_VERSIONS],
       capabilities: {
         tools: {},
       },

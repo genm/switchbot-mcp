@@ -1,3 +1,4 @@
+import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 
 import { loadConfig } from "../../src/config/env.js";
@@ -16,6 +17,7 @@ describe("loadConfig", () => {
           host: "127.0.0.1",
           port: 8787,
           path: "/mcp",
+          allowedHosts: ["127.0.0.1", "localhost", "[::1]"],
         },
       },
       switchbot: {
@@ -36,5 +38,60 @@ describe("loadConfig", () => {
         MCP_TRANSPORT: "http",
       }),
     ).toThrow("MCP_SERVER_API_KEY is required when MCP_TRANSPORT=http");
+  });
+
+  it("adds explicitly allowed HTTP hostnames without removing secure local defaults", () => {
+    const config = loadConfig({
+      SWITCHBOT_TOKEN: "token",
+      SWITCHBOT_SECRET: "secret",
+      MCP_TRANSPORT: "http",
+      MCP_SERVER_API_KEY: "api-key",
+      MCP_HTTP_HOST: "0.0.0.0",
+      MCP_HTTP_ALLOWED_HOSTS: "switchbot.example.test, proxy.localhost",
+    });
+
+    expect(config.transport.http.allowedHosts).toEqual([
+      "0.0.0.0",
+      "localhost",
+      "127.0.0.1",
+      "[::1]",
+      "switchbot.example.test",
+      "proxy.localhost",
+    ]);
+  });
+
+  it("rejects an empty entry in the HTTP hostname allowlist", () => {
+    expect(() =>
+      loadConfig({
+        SWITCHBOT_TOKEN: "token",
+        SWITCHBOT_SECRET: "secret",
+        MCP_TRANSPORT: "http",
+        MCP_SERVER_API_KEY: "api-key",
+        MCP_HTTP_ALLOWED_HOSTS: "switchbot.example.test,,proxy.localhost",
+      }),
+    ).toThrow("MCP_HTTP_ALLOWED_HOSTS");
+  });
+
+  it("preserves every configured hostname exactly once for varied valid lists", () => {
+    const hostname = fc.stringMatching(/^[a-z][a-z0-9-]{0,20}$/).map((label) => `${label}.test`);
+
+    fc.assert(
+      fc.property(fc.array(hostname, { minLength: 1, maxLength: 30 }), (hostnames) => {
+        const config = loadConfig({
+          SWITCHBOT_TOKEN: "token",
+          SWITCHBOT_SECRET: "secret",
+          MCP_TRANSPORT: "http",
+          MCP_SERVER_API_KEY: "api-key",
+          MCP_HTTP_ALLOWED_HOSTS: hostnames.map((value) => ` ${value} `).join(","),
+        });
+
+        const allowedHosts = config.transport.http.allowedHosts;
+        expect(new Set(allowedHosts).size).toBe(allowedHosts.length);
+        for (const configured of new Set(hostnames)) {
+          expect(allowedHosts).toContain(configured);
+        }
+      }),
+      { numRuns: 200 },
+    );
   });
 });

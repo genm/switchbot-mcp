@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { TtlCache } from "../../cache/ttl-cache.js";
@@ -7,6 +7,24 @@ import { errorResult, successResult } from "../result.js";
 
 const DEVICE_LIST_CACHE_KEY = "devices";
 const SCENE_LIST_CACHE_KEY = "scenes";
+const READ_ONLY_TOOL_ANNOTATIONS = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+const IDEMPOTENT_MUTATION_ANNOTATIONS = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+const NON_IDEMPOTENT_MUTATION_ANNOTATIONS = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: false,
+  openWorldHint: true,
+} as const;
 
 const listDevicesOutputSchema = z.object({
   devices: z.array(
@@ -79,6 +97,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_list_devices",
     {
       description: "List SwitchBot devices",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
         includeInfrared: z.boolean().optional(),
         nameQuery: z.string().optional(),
@@ -114,6 +133,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_list_devices_raw",
     {
       description: "List SwitchBot devices with raw upstream fields (advanced/unstable)",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
         includeInfrared: z.boolean().optional(),
         nameQuery: z.string().optional(),
@@ -150,6 +170,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_get_device_status",
     {
       description: "Get status for a specific SwitchBot device",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {
         deviceId: z.string().min(1),
       },
@@ -174,6 +195,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_set_power",
     {
       description: "Turn a SwitchBot device on or off",
+      annotations: IDEMPOTENT_MUTATION_ANNOTATIONS,
       inputSchema: {
         deviceId: z.string().min(1),
         power: z.enum(["on", "off"]),
@@ -197,6 +219,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_send_command",
     {
       description: "Send a raw command to a SwitchBot device",
+      annotations: NON_IDEMPOTENT_MUTATION_ANNOTATIONS,
       inputSchema: {
         deviceId: z.string().min(1),
         command: z.string().min(1),
@@ -234,6 +257,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_list_scenes",
     {
       description: "List manual scenes in SwitchBot",
+      annotations: READ_ONLY_TOOL_ANNOTATIONS,
       inputSchema: {},
       outputSchema: listScenesOutputSchema,
     },
@@ -260,6 +284,7 @@ export function registerTools(options: ToolRegistrationOptions): void {
     "switchbot_execute_scene",
     {
       description: "Execute a manual SwitchBot scene",
+      annotations: NON_IDEMPOTENT_MUTATION_ANNOTATIONS,
       inputSchema: {
         sceneId: z.string().min(1),
       },

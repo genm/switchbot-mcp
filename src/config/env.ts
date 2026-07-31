@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 const TransportSchema = z.enum(["stdio", "http"]);
+const CommaSeparatedHostnamesSchema = z
+  .string()
+  .refine(
+    (value) => value.split(",").every((hostname) => hostname.trim().length > 0),
+    "MCP_HTTP_ALLOWED_HOSTS must be a comma-separated list of non-empty hostnames",
+  )
+  .transform((value) => value.split(",").map((hostname) => hostname.trim()));
 
 const EnvSchema = z.object({
   SWITCHBOT_TOKEN: z.string().min(1, "SWITCHBOT_TOKEN is required"),
@@ -10,6 +17,7 @@ const EnvSchema = z.object({
   MCP_SERVER_API_KEY: z.string().optional(),
   MCP_HTTP_HOST: z.string().default("127.0.0.1"),
   MCP_HTTP_PORT: z.coerce.number().int().min(1).max(65535).default(8787),
+  MCP_HTTP_ALLOWED_HOSTS: CommaSeparatedHostnamesSchema.optional(),
   MCP_HTTP_PATH: z
     .string()
     .default("/mcp")
@@ -35,6 +43,7 @@ export interface AppConfig {
       port: number;
       path: string;
       apiKey?: string;
+      allowedHosts: string[];
     };
   };
   cache: {
@@ -75,6 +84,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
         port: value.MCP_HTTP_PORT,
         path: value.MCP_HTTP_PATH,
         apiKey: value.MCP_SERVER_API_KEY,
+        allowedHosts: buildAllowedHostnames(
+          value.MCP_HTTP_HOST,
+          value.MCP_HTTP_ALLOWED_HOSTS ?? [],
+        ),
       },
     },
     cache: {
@@ -82,4 +95,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     logLevel: value.LOG_LEVEL,
   };
+}
+
+function buildAllowedHostnames(host: string, configured: string[]): string[] {
+  const normalizedHost = host.includes(":") && !host.startsWith("[") ? `[${host}]` : host;
+  return [...new Set([normalizedHost, "localhost", "127.0.0.1", "[::1]", ...configured])];
 }

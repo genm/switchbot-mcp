@@ -39,7 +39,7 @@ jobs:
       - name: Check formatting
         run: npm run format
       - name: Lint workflows
-        uses: rhysd/actionlint@914e7df21a07ef503a81201c76d2b11c789d3fca # v1.7.12
+        run: npm run lint:actions
 
   test:
     if: github.event_name != 'pull_request' || github.event.pull_request.draft == false

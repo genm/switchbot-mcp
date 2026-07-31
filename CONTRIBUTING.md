@@ -52,11 +52,16 @@ then enforces this via the pre-push guard.
 - `OpenSSF Scorecard`: reports repository supply-chain posture weekly.
 - `Scheduled verification`: catches dependency, runtime, container, and
   optionally read-only live API drift.
-- `Release`: verifies, packs, attests, attaches, and publishes a package after a
-  GitHub Release is published.
+- `Release`: verifies a version tag, publishes the exact attested package to npm
+  and the MCP Registry, then creates the GitHub Release.
 
-Actions are pinned to immutable commit SHAs. Dependabot updates npm dependencies
-and GitHub Actions weekly.
+Actions are pinned to immutable commit SHAs. Downloaded CI tools and container
+base images are checksum/digest pinned. Dependabot updates npm, GitHub Actions,
+and Docker dependencies weekly.
+
+The `@hono/node-server` override in `package.json` keeps the MCP Node adapter
+above the vulnerable range in GHSA-frvp-7c67-39w9. Remove it only after the
+upstream MCP package requires a patched release.
 
 ## Labels
 

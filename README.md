@@ -51,11 +51,15 @@ code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/swit
 ## Highlights
 
 - v3.0.0 on the Node.js 24 LTS platform
+- MCP SDK v2 with explicit MCP 2026-07-28 protocol negotiation coverage
 - Native `fetch` with strict upstream response validation
 - Layered architecture (SwitchBot client / MCP tools / transports)
 - `stdio` and Streamable HTTP transports
 - API key required for HTTP transport
+- Same-host Origin and Host validation for HTTP deployments
 - Structured MCP tool outputs (`structuredContent`)
+- MCP risk annotations and bounded retries for read-only SwitchBot requests
+- Redacted JSONL operational logs
 - Public-repository CI across supported runtimes, package artifacts, and containers
 
 ## Requirements
@@ -81,8 +85,14 @@ npm install @genm-dev/switchbot-mcp
 - `MCP_TRANSPORT=stdio|http` (default: `stdio`)
 - `MCP_SERVER_API_KEY` (required for `http`)
 - `MCP_HTTP_HOST` (default: `127.0.0.1`)
+- `MCP_HTTP_ALLOWED_HOSTS` (optional comma-separated proxy/public hostnames)
 - `MCP_HTTP_PORT` (default: `8787`)
 - `MCP_HTTP_PATH` (default: `/mcp`)
+
+HTTP requests with an `Origin` header must use a hostname from the same
+allowlist as the `Host` header. Localhost and the configured bind host are
+included automatically. Add reverse-proxy hostnames explicitly; malformed or
+cross-origin requests are rejected.
 
 ### Runtime
 

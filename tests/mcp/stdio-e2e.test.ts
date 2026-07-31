@@ -2,8 +2,8 @@ import { createServer } from "node:http";
 import { AddressInfo } from "node:net";
 import { createRequire } from "node:module";
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { Client } from "@modelcontextprotocol/client";
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const require = createRequire(import.meta.url);
@@ -46,7 +46,10 @@ describe("stdio e2e", () => {
       stderr: "pipe",
     });
 
-    client = new Client({ name: "e2e-client", version: "1.0.0" });
+    client = new Client(
+      { name: "e2e-client", version: "1.0.0" },
+      { versionNegotiation: { mode: { pin: "2026-07-28" } } },
+    );
     await client.connect(transport);
   });
 
@@ -57,6 +60,8 @@ describe("stdio e2e", () => {
   });
 
   it("executes all v3 tools through stdio process and enforces cache behavior", async () => {
+    expect(client.getProtocolEra()).toBe("modern");
+
     const listedTools = await client.listTools();
     const names = listedTools.tools.map((t) => t.name).sort();
 

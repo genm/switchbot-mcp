@@ -6,6 +6,7 @@ const rank: Record<LogLevel, number> = {
   warn: 30,
   error: 40,
 };
+const SENSITIVE_LOG_KEY = /authorization|api[-_]?key|secret|token/i;
 
 export interface Logger {
   debug(message: string, meta?: unknown): void;
@@ -19,9 +20,8 @@ export function createLogger(level: LogLevel): Logger {
     if (rank[target] < rank[level]) {
       return;
     }
-    const payload = meta === undefined ? "" : ` ${JSON.stringify(meta)}`;
     // eslint-disable-next-line no-console
-    console.error(`[${target.toUpperCase()}] ${message}${payload}`);
+    console.error(serializeLogEntry(target, message, meta));
   };
 
   return {
@@ -30,4 +30,26 @@ export function createLogger(level: LogLevel): Logger {
     warn: (message, meta) => log("warn", message, meta),
     error: (message, meta) => log("error", message, meta),
   };
+}
+
+function serializeLogEntry(level: LogLevel, message: string, meta?: unknown): string {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    message,
+    ...(meta === undefined ? {} : { meta }),
+  };
+
+  try {
+    return JSON.stringify(entry, (key, value) =>
+      SENSITIVE_LOG_KEY.test(key) ? "[REDACTED]" : value,
+    );
+  } catch {
+    return JSON.stringify({
+      timestamp: entry.timestamp,
+      level,
+      message,
+      meta: "[unserializable]",
+    });
+  }
 }

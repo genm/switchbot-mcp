@@ -51,11 +51,15 @@ code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/swit
 ## 概要
 
 - Node.js 24 LTS を基盤とする v3.0.0
+- MCP SDK v2とMCP 2026-07-28プロトコル交渉の明示的な検証
 - 標準 `fetch` と厳密な上流レスポンス検証
 - レイヤー分離（SwitchBotクライアント / MCPツール / トランスポート）
 - `stdio` と Streamable HTTP を正式サポート
 - HTTPモードは APIキー必須
+- HTTPデプロイ向けの同一ホストOrigin / Host検証
 - 全ツールで `structuredContent` を返却
+- MCPリスク注釈と読み取り専用SwitchBotリクエストの上限付きリトライ
+- シークレットをマスクするJSONL運用ログ
 - 対応ランタイム・配布パッケージ・コンテナを横断する公開repo向けCI
 
 ## 必要条件
@@ -81,8 +85,14 @@ npm install @genm-dev/switchbot-mcp
 - `MCP_TRANSPORT=stdio|http`（デフォルト: `stdio`）
 - `MCP_SERVER_API_KEY`（`http`時は必須）
 - `MCP_HTTP_HOST`（デフォルト: `127.0.0.1`）
+- `MCP_HTTP_ALLOWED_HOSTS`（任意: proxy / 公開ホスト名のカンマ区切り）
 - `MCP_HTTP_PORT`（デフォルト: `8787`）
 - `MCP_HTTP_PATH`（デフォルト: `/mcp`）
+
+`Origin` ヘッダーを持つHTTPリクエストは、`Host` と同じ許可リストの
+ホスト名を使う必要があります。localhostとbind hostは自動的に含まれます。
+リバースプロキシのホスト名は明示的に追加してください。不正なリクエストや
+cross-originリクエストは拒否されます。
 
 ### 実行オプション
 
