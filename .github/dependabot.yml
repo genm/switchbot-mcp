@@ -13,6 +13,11 @@ updates:
         dependency-type: production
       development-dependencies:
         dependency-type: development
+    ignore:
+      # Keep compiler types aligned with the minimum supported Node.js runtime.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
     open-pull-requests-limit: 10
     labels:
       - dependencies
