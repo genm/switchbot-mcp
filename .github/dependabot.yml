@@ -44,6 +44,11 @@ updates:
       day: monday
       time: "04:45"
       timezone: Asia/Tokyo
+    ignore:
+      # The production image follows the documented LTS runtime, not odd-numbered releases.
+      - dependency-name: node
+        versions:
+          - "25.x"
     open-pull-requests-limit: 5
     labels:
       - dependencies
