@@ -36,10 +36,15 @@ try {
   assert(shippedFiles.has("package.json"), "tarball is missing package.json");
   assert(shippedFiles.has("build/index.js"), "tarball is missing build/index.js");
   assert(shippedFiles.has("server.json"), "tarball is missing MCP Registry metadata");
+  assert(shippedFiles.has("LICENSE"), "tarball is missing the project license");
+  assert(shippedFiles.has("README.md"), "tarball is missing user documentation");
+  assert(shippedFiles.has("SECURITY.md"), "tarball is missing the security reporting policy");
+  assert(shippedFiles.has("SUPPORT.md"), "tarball is missing the support policy");
   assert(
     shippedFiles.has("docs/migration-v2-to-v3.md"),
     "tarball is missing the v3 migration guide",
   );
+  assert(shippedFiles.has("docs/security-model.md"), "tarball is missing the security model");
   assert(
     shippedFiles.get("build/index.js").mode === 0o755,
     "packaged CLI entrypoint is not executable",

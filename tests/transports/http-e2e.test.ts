@@ -23,9 +23,11 @@ interface MockSwitchBotServer {
 describe("http e2e", () => {
   let mcpPort = 0;
   let serverProcess: ChildProcess | undefined;
+  let serverStderr = "";
   let mockSwitchBot: MockSwitchBotServer;
 
   beforeEach(async () => {
+    serverStderr = "";
     mockSwitchBot = await startMockSwitchBotServer();
     mcpPort = await findFreePort();
 
@@ -46,12 +48,16 @@ describe("http e2e", () => {
       }),
       stdio: ["ignore", "pipe", "pipe"],
     });
+    serverProcess.stderr?.setEncoding("utf8");
+    serverProcess.stderr?.on("data", (chunk: string) => {
+      serverStderr += chunk;
+    });
 
-    await waitForHttpServer(mcpPort, MCP_PATH);
+    await waitForHttpServer(mcpPort, MCP_PATH, serverProcess, () => serverStderr);
   });
 
   afterEach(async () => {
-    if (serverProcess && !serverProcess.killed) {
+    if (serverProcess && serverProcess.exitCode === null && serverProcess.signalCode === null) {
       serverProcess.kill("SIGTERM");
       await once(serverProcess, "exit").catch(() => undefined);
     }
@@ -161,9 +167,21 @@ function normalizeEnv(input: NodeJS.ProcessEnv): Record<string, string> {
   );
 }
 
-async function waitForHttpServer(port: number, path: string): Promise<void> {
-  const maxAttempts = 50;
-  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+async function waitForHttpServer(
+  port: number,
+  path: string,
+  process: ChildProcess,
+  readStderr: () => string,
+): Promise<void> {
+  // A deadline tolerates loaded CI hosts while still bounding a wedged startup.
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    if (process.exitCode !== null || process.signalCode !== null) {
+      throw new Error(
+        `MCP HTTP server exited before startup (code=${process.exitCode}, signal=${process.signalCode}): ${readStderr()}`,
+      );
+    }
+
     try {
       const result = await postRaw({ path, port });
       if (result.statusCode > 0) {
@@ -175,7 +193,7 @@ async function waitForHttpServer(port: number, path: string): Promise<void> {
     await new Promise((resolve) => setTimeout(resolve, 50));
   }
 
-  throw new Error("MCP HTTP server did not start in time");
+  throw new Error(`MCP HTTP server did not start in time: ${readStderr()}`);
 }
 
 async function findFreePort(): Promise<number> {
