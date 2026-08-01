@@ -1,0 +1,16 @@
+name: Security contact request
+description: Request a private reporting channel without disclosing vulnerability details
+title: "Security contact request"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public. Do not include vulnerability details, affected versions,
+        device identifiers, logs, credentials, or links to private evidence.
+  - type: checkboxes
+    id: no_details
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I have not included vulnerability details or sensitive information.
+          required: true

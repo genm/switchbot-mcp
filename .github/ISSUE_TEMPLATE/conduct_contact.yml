@@ -1,0 +1,16 @@
+name: Conduct contact request
+description: Request a private conduct-reporting channel without disclosing incident details
+title: "Conduct contact request"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This issue is public. Do not include incident details, names, screenshots,
+        private messages, or other personal information.
+  - type: checkboxes
+    id: no_details
+    attributes:
+      label: Public-content confirmation
+      options:
+        - label: I have not included incident details or personal information.
+          required: true

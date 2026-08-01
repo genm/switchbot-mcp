@@ -2,9 +2,24 @@
 
 Thanks for contributing to `switchbot-mcp`.
 
+## Contribution scope and licensing
+
+Contributions are accepted under the repository's [ISC license](./LICENSE)
+(inbound equals outbound). By submitting a contribution, you represent that you
+have the right to provide it under those terms.
+
+Identify copied, generated, or third-party material in the pull request. For
+AI-assisted changes, disclose the tool use when it materially produced code,
+tests, documentation, or assets, and review the output for confidential data,
+license compatibility, and correctness before submitting it.
+
+Propose large or compatibility-breaking changes in an issue before investing in
+an implementation. See [GOVERNANCE.md](./GOVERNANCE.md) for decision authority.
+
 ## Branch model
 
-- `main` is the protected default branch.
+- `main` is the default branch and must be protected by the live ruleset
+  described in [docs/github-flow.md](./docs/github-flow.md) before release work.
 - Use a short-lived branch for every change.
 - Open a Draft PR while work is in progress, then mark it ready for review to run
   the complete required CI matrix.
@@ -44,8 +59,8 @@ then enforces this via the pre-push guard.
 ## CI responsibilities
 
 - `CI`: static analysis, Node 24/26 on Linux/macOS/Windows, coverage,
-  packed-package execution, and container behavior. Protect `main` with the
-  stable `ci/required` job.
+  packed-package execution, production SBOM completeness, and container
+  behavior. Protect `main` with the stable `ci/required` job.
 - `Dependency review`: blocks newly introduced moderate-or-higher known
   vulnerabilities.
 - `CodeQL`: scans ready PRs, `main`, and a weekly schedule.
@@ -59,19 +74,29 @@ Actions are pinned to immutable commit SHAs. Downloaded CI tools and container
 base images are checksum/digest pinned. Dependabot updates npm, GitHub Actions,
 and Docker dependencies weekly.
 
+The scheduled live job is disabled unless the repository variable
+`SWITCHBOT_LIVE_TESTS_ENABLED` is exactly `true`. When enabled, both
+`SWITCHBOT_TOKEN` and `SWITCHBOT_SECRET` repository secrets are required; a
+missing secret fails the job instead of reporting synthetic success.
+
 The `@hono/node-server` override in `package.json` keeps the MCP Node adapter
 above the vulnerable range in GHSA-frvp-7c67-39w9. Remove it only after the
 upstream MCP package requires a patched release.
 
+Changes to authentication, transports, outbound requests, tool annotations, or
+mutation behavior must update [docs/security-model.md](./docs/security-model.md)
+when they change a trust boundary or security assumption.
+
 ## Labels
 
-Maintainers use these labels:
+Repository policy defines these labels:
 
 - `manual-review`
 - `security`
 - `dependencies`
 
-Sync labels:
+Hosted labels are separate state. An authorized maintainer must sync and read
+them back before relying on label-based routing:
 
 ```bash
 npm run labels:sync
@@ -81,6 +106,11 @@ npm run labels:sync
 
 Do not open public issues for vulnerabilities.
 Follow [SECURITY.md](./SECURITY.md) and use GitHub private security advisories.
+
+Questions, usage help, and ordinary bug reports follow
+[SUPPORT.md](./SUPPORT.md).
+
+All participation follows [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 
 ## Scope note
 

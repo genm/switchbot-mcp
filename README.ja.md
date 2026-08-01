@@ -2,26 +2,45 @@
 
 AIアシスタント向けの SwitchBot MCP Server v3 です。
 
-[![smithery badge](https://smithery.ai/badge/@genm-dev/switchbot-mcp)](https://smithery.ai/server/@genm-dev/switchbot-mcp)
-[![npm version](https://img.shields.io/npm/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
-[![npm downloads](https://img.shields.io/npm/dm/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
-[![Node.js](https://img.shields.io/node/v/@genm-dev/switchbot-mcp.svg)](https://www.npmjs.com/package/@genm-dev/switchbot-mcp)
-[![License](https://img.shields.io/npm/l/@genm-dev/switchbot-mcp.svg)](./LICENSE)
-[![MCP Registry](https://img.shields.io/badge/MCP_Registry-ready-5A67D8.svg)](./server.json)
+[![License](https://img.shields.io/badge/license-ISC-blue.svg)](./LICENSE)
 [![CI](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml/badge.svg)](https://github.com/genm/switchbot-mcp/actions/workflows/codeql.yml)
 
 [English](./README.md)
 
-## クイックインストール
+## プロジェクトの状態
+
+source repository は公開済みですが、v3 は npm と公式 MCP Registry へまだ
+公開されていません。この README の npm、`npx`、ワンクリックの各コマンドは、
+[Issue #7](https://github.com/genm/switchbot-mcp/issues/7) で追跡する
+初回 release 後に利用可能になります。現時点の評価には source build を利用してください。
+
+本プロジェクトは非公式の community integration であり、SwitchBot との提携や
+承認を示すものではありません。tool call は物理デバイスの制御や scene の実行を
+行えます。利用前に要求された操作、資格情報へのアクセス、network 公開範囲を確認し、
+AI client の確認画面を認可境界として扱わないでください。
+
+## source からの build（現在利用可能）
+
+```bash
+git clone https://github.com/genm/switchbot-mcp.git
+cd switchbot-mcp
+npm ci --ignore-scripts
+npm run build
+```
+
+以下の必須設定を渡して `node build/index.js` を実行してください。資格情報が
+不足している場合、process は fail closed します。
+
+## package install（初回 release 後）
 
 ### ワンクリックインストール
 
 [![Install in Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](cursor://anysphere.cursor-deeplink/mcp/install?name=switchbot&config=eyJzd2l0Y2hib3QiOnsiY29tbWFuZCI6Im5weCIsImFyZ3MiOlsiLXkiLCJAZ2VubS1kZXYvc3dpdGNoYm90LW1jcCJdLCJlbnYiOnsiU1dJVENIQk9UX1RPS0VOIjoiWU9VUl9TV0lUQ0hCT1RfVE9LRU4iLCJTV0lUQ0hCT1RfU0VDUkVUIjoiWU9VUl9TV0lUQ0hCT1RfU0VDUkVUIiwiTUNQX1RSQU5TUE9SVCI6InN0ZGlvIn19fQ%3D%3D)
 [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_MCP-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white)](vscode:mcp/install?%7B%22name%22%3A%22switchbot%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40genm-dev%2Fswitchbot-mcp%22%5D%2C%22env%22%3A%7B%22SWITCHBOT_TOKEN%22%3A%22YOUR_SWITCHBOT_TOKEN%22%2C%22SWITCHBOT_SECRET%22%3A%22YOUR_SWITCHBOT_SECRET%22%2C%22MCP_TRANSPORT%22%3A%22stdio%22%7D%7D)
 
-インストール後、`SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を実際の資格情報へ
-置き換えてください。ボタンは公開npm packageを`npx`経由で設定します。起動前に
+これらの link は公開予定の npm package を参照します。公開後、
+`SWITCHBOT_TOKEN` と `SWITCHBOT_SECRET` を実際の資格情報へ置き換え、起動前に
 設定内容を確認してください。
 
 ### VS Code
@@ -69,6 +88,8 @@ code --add-mcp '{"name":"switchbot","command":"npx","args":["-y","@genm-dev/swit
 
 ## インストール
 
+初回 release 後に利用可能です。
+
 ```bash
 npm install @genm-dev/switchbot-mcp
 ```
@@ -83,7 +104,7 @@ npm install @genm-dev/switchbot-mcp
 ### トランスポート
 
 - `MCP_TRANSPORT=stdio|http`（デフォルト: `stdio`）
-- `MCP_SERVER_API_KEY`（`http`時は必須）
+- `MCP_SERVER_API_KEY`（`http`時は必須。前後空白を含まない高エントロピーなsecretを使用）
 - `MCP_HTTP_HOST`（デフォルト: `127.0.0.1`）
 - `MCP_HTTP_ALLOWED_HOSTS`（任意: proxy / 公開ホスト名のカンマ区切り）
 - `MCP_HTTP_PORT`（デフォルト: `8787`）
@@ -104,6 +125,10 @@ cross-originリクエストは拒否されます。
 
 - `SWITCHBOT_BASE_URL`（決定論的E2E用にSwitchBot APIエンドポイントを上書き）
 
+この上書きは `NODE_ENV=test` かつ URL が `localhost`、`127.0.0.0/8`、
+`[::1]` のいずれかを使う場合に限り受け付けます。production credential が別originへ
+送信されることを防ぎます。
+
 ## MCPツール（v3）
 
 1. `switchbot_list_devices`
@@ -118,7 +143,7 @@ cross-originリクエストは拒否されます。
 
 ## 使い方
 
-### stdio（package / npx）
+### stdio（package / npx、初回 release 後）
 
 ```json
 {
@@ -166,7 +191,20 @@ npx -y @genm-dev/switchbot-mcp
 
 エンドポイント: `http://127.0.0.1:8787/mcp`
 
-### 代替インストール（Smithery）
+bearer credential は `openssl rand -hex 32` などの暗号学的に安全な生成器で作成し、
+secret manager から注入してください。Node server 自体は平文HTTPを提供します。
+loopback外へ配置する場合は信頼できるreverse proxyでTLSを終端し、network accessを
+制限して、そのhostnameを `MCP_HTTP_ALLOWED_HOSTS` に設定してください。Node listenerを
+public internetへ直接公開しないでください。
+
+### 任意の第三者 integration: Smithery
+
+Smithery は本プロジェクトの公式配布経路ではありません。npm、Official MCP Registry、
+および上記の client 直接設定を、正規の install / discovery 経路とします。
+
+保持している Smithery 設定は旧 repository 形式であり、現在の MCPB / URL publish
+方式に対する再検証は行っていません。以下の command は参考情報であり、初回 release 後に
+別途検証が完了するまで、対応済みの install 方法として案内しないでください。
 
 ```bash
 npx -y @smithery/cli@latest install @genm-dev/switchbot-mcp --client claude
@@ -182,7 +220,8 @@ npm run test:coverage
 ```
 
 `npm run check` は型・lint・format、MCPプロトコル/トランスポート、build、
-package metadata、pack後のインストール/実行を検証します。
+package metadata、pack後のインストール/実行、およびproduction dependencyを網羅する
+検証済みSBOMを確認します。
 `npm run test:coverage` はカバレッジ下限を強制します。
 
 Docker実行環境を変更した場合は、次も実行してください。
@@ -225,9 +264,26 @@ npx @modelcontextprotocol/inspector \
 
 このリポジトリでは Inspector を依存固定しません。`npx` で最新版を利用してください。
 
+## データ処理と削除
+
+- server は固定された公式SwitchBot API originにだけリクエストを送信します。
+  テスト用overrideはloopback addressに限定されます。
+- device / scene listはprocess memory内だけにcacheされます。SwitchBot device dataの
+  永続化、analytics、telemetry、automatic update checkは行いません。
+- 運用logはstderrへstructured JSONで出力します。credentialを示すfieldはredactし、
+  API operation logにはdevice / scene identifierを含めません。
+- uninstall時はMCP client/server設定とinstall済みnpm packageまたはcontainerを削除します。
+  credentialは、その正本であるsecret managerまたはclient設定から別途削除・rotateしてください。
+  このserverには削除対象となるpersistent credential storeはありません。
+
 ## メンテナ向けドキュメント
 
 - [CONTRIBUTING.md](./CONTRIBUTING.md)
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [GOVERNANCE.md](./GOVERNANCE.md)
+- [SECURITY.md](./SECURITY.md)
+- [docs/security-model.md](./docs/security-model.md)
+- [SUPPORT.md](./SUPPORT.md)
 - [docs/github-flow.md](./docs/github-flow.md)
 - [docs/release-process.md](./docs/release-process.md)
 
@@ -238,4 +294,5 @@ npx @modelcontextprotocol/inspector \
 
 ## ライセンス
 
-ISC
+[ISC](./LICENSE) です。SwitchBot の名称および商標は各権利者に帰属し、software
+license は trademark rights を付与しません。
