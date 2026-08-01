@@ -29,10 +29,9 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.15.0
-      - name: Use the repository npm version
-        run: npm install --global npm@11.19.0
+          package-manager-cache: false
       - name: Install dependencies
-        run: npm ci --ignore-scripts
+        run: corepack npm ci --ignore-scripts
       - name: Verify release tag
         env:
           RELEASE_TAG: ${{ github.ref_name }}
@@ -43,19 +42,24 @@ jobs:
             exit 1
           fi
       - name: Verify source and package
-        run: npm run check:ci
+        run: corepack npm run check:ci
       - name: Pack release artifact
         id: pack
         run: |
           mkdir release-package
-          npm pack --pack-destination release-package --json > package-pack.json
+          corepack npm pack --pack-destination release-package --json > package-pack.json
           PACKAGE_FILE="$(node --input-type=module -e "import fs from 'node:fs'; const result = JSON.parse(fs.readFileSync('package-pack.json', 'utf8')); process.stdout.write(result[0].filename)")"
+          node scripts/ci/generate-sbom.mjs "release-package/$PACKAGE_FILE.cdx.json"
+          (cd release-package && sha256sum "$PACKAGE_FILE" "$PACKAGE_FILE.cdx.json" > SHA256SUMS)
           echo "file=$PACKAGE_FILE" >> "$GITHUB_OUTPUT"
       - name: Upload exact release package
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npm-package
-          path: release-package/${{ steps.pack.outputs.file }}
+          path: |
+            release-package/${{ steps.pack.outputs.file }}
+            release-package/${{ steps.pack.outputs.file }}.cdx.json
+            release-package/SHA256SUMS
           if-no-files-found: error
           retention-days: 1
       - name: Upload test evidence on failure
@@ -89,8 +93,7 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.15.0
-      - name: Use the repository npm version
-        run: npm install --global npm@11.19.0
+          package-manager-cache: false
       - name: Download exact release package
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v8.0.0
         with:
@@ -104,11 +107,21 @@ jobs:
             echo "Expected one package archive, found ${#PACKAGE_FILES[@]}." >&2
             exit 1
           fi
-          echo "file=${PACKAGE_FILES[0]}" >> "$GITHUB_OUTPUT"
+          {
+            echo "file=${PACKAGE_FILES[0]}"
+            echo "sbom=${PACKAGE_FILES[0]}.cdx.json"
+            echo "checksums=release-package/SHA256SUMS"
+          } >> "$GITHUB_OUTPUT"
+      - name: Verify release artifact checksums
+        working-directory: release-package
+        run: sha256sum --check SHA256SUMS
       - name: Attest release artifact
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
-          subject-path: ${{ steps.package.outputs.file }}
+          subject-path: |
+            ${{ steps.package.outputs.file }}
+            ${{ steps.package.outputs.sbom }}
+            ${{ steps.package.outputs.checksums }}
       - name: Install pinned MCP Registry publisher
         env:
           MCP_PUBLISHER_VERSION: v1.8.0
@@ -132,19 +145,23 @@ jobs:
       - name: Validate MCP Registry metadata
         run: mcp-publisher validate server.json
       - name: Publish or verify npm package
-        run: node scripts/release/publish-npm.mjs "${{ steps.package.outputs.file }}"
+        env:
+          PACKAGE_FILE: ${{ steps.package.outputs.file }}
+        run: node scripts/release/publish-npm.mjs "$PACKAGE_FILE"
       - name: Publish or verify MCP Registry metadata
         run: node scripts/release/publish-registry.mjs
       - name: Create or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           PACKAGE_FILE: ${{ steps.package.outputs.file }}
+          SBOM_FILE: ${{ steps.package.outputs.sbom }}
+          CHECKSUMS_FILE: ${{ steps.package.outputs.checksums }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release upload "$RELEASE_TAG" "$PACKAGE_FILE" --clobber
+            gh release upload "$RELEASE_TAG" "$PACKAGE_FILE" "$SBOM_FILE" "$CHECKSUMS_FILE" --clobber
           else
-            gh release create "$RELEASE_TAG" "$PACKAGE_FILE" \
+            gh release create "$RELEASE_TAG" "$PACKAGE_FILE" "$SBOM_FILE" "$CHECKSUMS_FILE" \
               --generate-notes \
               --title "$RELEASE_TAG" \
               --verify-tag

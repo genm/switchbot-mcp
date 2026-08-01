@@ -2,5 +2,11 @@
 !package.json
 !package-lock.json
 !tsconfig.json
+!LICENSE
+!README.md
+!SECURITY.md
+!SUPPORT.md
+!docs/
+!docs/security-model.md
 !src/
 !src/**

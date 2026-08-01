@@ -27,6 +27,8 @@ jobs:
           egress-policy: audit
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -54,6 +56,8 @@ jobs:
           egress-policy: audit
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -71,6 +75,8 @@ jobs:
           egress-policy: audit
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
@@ -79,6 +85,7 @@ jobs:
         run: npm run smoke:container
 
   live-read-only:
+    if: vars.SWITCHBOT_LIVE_TESTS_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -88,19 +95,21 @@ jobs:
           egress-policy: audit
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Set up Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24.15.0
       - name: Install dependencies
         run: npm ci --ignore-scripts
-      - name: Run read-only SwitchBot verification when configured
+      - name: Run configured read-only SwitchBot verification
         env:
           SWITCHBOT_TOKEN: ${{ secrets.SWITCHBOT_TOKEN }}
           SWITCHBOT_SECRET: ${{ secrets.SWITCHBOT_SECRET }}
         run: |
           if [[ -z "$SWITCHBOT_TOKEN" || -z "$SWITCHBOT_SECRET" ]]; then
-            echo "Live read-only verification is not configured." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "SWITCHBOT_LIVE_TESTS_ENABLED is true, but live credentials are missing." >&2
+            exit 1
           fi
           npm run test:live

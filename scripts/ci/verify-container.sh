@@ -14,6 +14,20 @@ trap cleanup EXIT
 
 docker build --tag "${image_name}" .
 
+docker run --rm --entrypoint sh "${image_name}" -c \
+  'for file in LICENSE README.md SECURITY.md SUPPORT.md docs/security-model.md; do test -r "/app/$file"; done'
+
+image_source="$(docker image inspect "${image_name}" --format '{{ index .Config.Labels "org.opencontainers.image.source" }}')"
+image_license="$(docker image inspect "${image_name}" --format '{{ index .Config.Labels "org.opencontainers.image.licenses" }}')"
+if [[ "${image_source}" != "https://github.com/genm/switchbot-mcp" ]]; then
+  echo "Container source label is missing or incorrect." >&2
+  exit 1
+fi
+if [[ "${image_license}" != "ISC" ]]; then
+  echo "Container license label is missing or incorrect." >&2
+  exit 1
+fi
+
 set +e
 docker run --rm "${image_name}" \
   >"${verification_tmp_dir}/missing-config.stdout" \
@@ -108,7 +122,7 @@ if [[ "${container_user}" != "node" ]]; then
   exit 1
 fi
 
-printf '{"missingConfigExit":%s,"unauthorizedStatus":%s,"authorizedStatus":%s,"containerUser":"%s"}\n' \
+printf '{"missingConfigExit":%s,"unauthorizedStatus":%s,"authorizedStatus":%s,"containerUser":"%s","policyFiles":true,"ociLabels":true}\n' \
   "${missing_config_exit_code}" \
   "${unauthorized_http_code}" \
   "${authorized_http_code}" \

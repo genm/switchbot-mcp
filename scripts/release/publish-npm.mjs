@@ -29,7 +29,8 @@ export function parsePublishedIntegrity(result) {
 }
 
 function runNpm(args, stdio = "pipe") {
-  return spawnSync(process.platform === "win32" ? "npm.cmd" : "npm", args, {
+  const corepack = process.platform === "win32" ? "corepack.cmd" : "corepack";
+  return spawnSync(corepack, ["npm", ...args], {
     encoding: "utf8",
     stdio,
   });

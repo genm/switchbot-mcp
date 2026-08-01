@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 yarn.lock
 
 # Build output
@@ -39,12 +38,6 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
-*.json
-!package.json
-!tsconfig.json
-!package-lock.json
-!.oxfmtrc.json
-!server.json
 config.json
 token.json
 devices.json
