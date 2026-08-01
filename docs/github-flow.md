@@ -1,8 +1,9 @@
 # GitHub Flow
 
-This public repository uses one protected default branch, `main`, and short-lived
-PR branches. The repository belongs to a personal GitHub account, so merge queue
-is not part of the flow.
+This public repository targets one protected default branch, `main`, and
+short-lived PR branches. Repository files do not activate hosted protection: read
+back the live ruleset before describing `main` as protected. The repository
+belongs to a personal GitHub account, so merge queue is not part of the flow.
 
 ## Pull request lifecycle
 
@@ -36,6 +37,10 @@ job names individually.
 CodeQL and dependency review remain visible security checks, but are not folded
 into the aggregator because GitHub security availability can differ for
 Dependabot-authored and forked PRs.
+
+No release tag may be pushed until this ruleset is active and verified. Protect
+the `v*` tag namespace from deletion and unauthorized updates before the first
+release.
 
 ## Repository settings
 

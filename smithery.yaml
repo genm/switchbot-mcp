@@ -1,4 +1,8 @@
-# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+# Optional third-party integration metadata.
+# npm, the Official MCP Registry, and direct client configuration are canonical.
+# This legacy repository format is retained for reference and must be revalidated
+# against Smithery's current MCPB/URL publication model before it is advertised.
+# Current publication docs: https://smithery.ai/docs/build/publish
 
 build:
   dockerBuildPath: ./
