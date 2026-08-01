@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createLogger } from "../../src/logger.js";
+import type { Logger } from "../../src/logger.js";
 import { SwitchBotClient } from "../../src/switchbot/client.js";
 import {
   SwitchBotApiError,
@@ -202,6 +203,50 @@ describe("SwitchBotClient", () => {
         command: "turnOn",
       }),
     ).resolves.toBeUndefined();
+  });
+
+  it("does not expose device identifiers in request logs or protocol errors", async () => {
+    const deviceId = "private-device-id";
+    const entries: unknown[] = [];
+    const logger: Logger = {
+      debug: (message, meta) => entries.push({ message, meta }),
+      info: (message, meta) => entries.push({ message, meta }),
+      warn: (message, meta) => entries.push({ message, meta }),
+      error: (message, meta) => entries.push({ message, meta }),
+    };
+    let attempts = 0;
+    const baseURL = await startMockSwitchBotServer((_req, res) => {
+      attempts += 1;
+      if (attempts === 1) {
+        res.setHeader("Retry-After", "0");
+        respondJson(res, 503, { message: "temporarily unavailable" });
+        return;
+      }
+
+      respondJson(res, 200, {
+        statusCode: 100,
+        message: "success",
+        body: "invalid-status-body",
+      });
+    });
+    const client = new SwitchBotClient({
+      token: "token",
+      secret: "secret",
+      timeoutMs: 500,
+      logger,
+      baseURL,
+    });
+
+    const error = await client.getDeviceStatus(deviceId).catch((caught: unknown) => caught);
+
+    expect(error).toBeInstanceOf(SwitchBotProtocolError);
+    expect(String(error)).not.toContain(deviceId);
+    expect(JSON.stringify(entries)).not.toContain(deviceId);
+    expect(entries).toContainEqual(
+      expect.objectContaining({
+        meta: expect.objectContaining({ operation: "get-device-status" }),
+      }),
+    );
   });
 });
 

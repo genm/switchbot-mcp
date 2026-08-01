@@ -65,6 +65,13 @@ interface SwitchBotRequestInit {
   body?: string;
 }
 
+type SwitchBotOperation =
+  | "list-devices"
+  | "get-device-status"
+  | "send-command"
+  | "list-scenes"
+  | "execute-scene";
+
 export class SwitchBotClient {
   private readonly baseURL: string;
 
@@ -73,7 +80,7 @@ export class SwitchBotClient {
   }
 
   async listDevices(includeInfrared: boolean): Promise<SwitchBotDevice[]> {
-    const body = await this.get("/devices", deviceListBodySchema);
+    const body = await this.get("/devices", deviceListBodySchema, "list-devices");
     const devices: SwitchBotDevice[] = [...body.deviceList];
 
     if (includeInfrared && body.infraredRemoteList) {
@@ -84,7 +91,11 @@ export class SwitchBotClient {
   }
 
   async getDeviceStatus(deviceId: string): Promise<Record<string, unknown>> {
-    return this.get(`/devices/${encodeURIComponent(deviceId)}/status`, unknownRecordSchema);
+    return this.get(
+      `/devices/${encodeURIComponent(deviceId)}/status`,
+      unknownRecordSchema,
+      "get-device-status",
+    );
   }
 
   async sendCommand(input: SendCommandInput): Promise<void> {
@@ -94,22 +105,34 @@ export class SwitchBotClient {
       commandType: input.commandType ?? "command",
     };
 
-    await this.post(`/devices/${encodeURIComponent(input.deviceId)}/commands`, payload);
+    await this.post(
+      `/devices/${encodeURIComponent(input.deviceId)}/commands`,
+      payload,
+      "send-command",
+    );
   }
 
   async listScenes(): Promise<SwitchBotScene[]> {
-    return this.get("/scenes", z.array(switchBotSceneSchema));
+    return this.get("/scenes", z.array(switchBotSceneSchema), "list-scenes");
   }
 
   async executeScene(sceneId: string): Promise<void> {
-    await this.post(`/scenes/${encodeURIComponent(sceneId)}/execute`, {});
+    await this.post(`/scenes/${encodeURIComponent(sceneId)}/execute`, {}, "execute-scene");
   }
 
-  private async get<T>(path: string, bodySchema: z.ZodType<T>): Promise<T> {
-    return this.request(path, { method: "GET" }, bodySchema);
+  private async get<T>(
+    path: string,
+    bodySchema: z.ZodType<T>,
+    operation: SwitchBotOperation,
+  ): Promise<T> {
+    return this.request(path, { method: "GET" }, bodySchema, operation);
   }
 
-  private async post<TBody>(path: string, body: TBody): Promise<void> {
+  private async post<TBody>(
+    path: string,
+    body: TBody,
+    operation: SwitchBotOperation,
+  ): Promise<void> {
     await this.request(
       path,
       {
@@ -117,6 +140,7 @@ export class SwitchBotClient {
         body: JSON.stringify(body),
       },
       unknownRecordSchema,
+      operation,
     );
   }
 
@@ -124,6 +148,7 @@ export class SwitchBotClient {
     path: string,
     init: SwitchBotRequestInit,
     bodySchema: z.ZodType<T>,
+    operation: SwitchBotOperation,
   ): Promise<T> {
     try {
       const deadline = Date.now() + this.options.timeoutMs;
@@ -155,7 +180,7 @@ export class SwitchBotClient {
         const rawBody = await readJsonBody(response);
 
         if (response.ok) {
-          return this.unwrap(path, rawBody, bodySchema);
+          return this.unwrap(operation, rawBody, bodySchema);
         }
 
         if (
@@ -170,7 +195,7 @@ export class SwitchBotClient {
 
           retries += 1;
           this.options.logger.warn("Retrying read-only SwitchBot API request", {
-            path,
+            operation,
             statusCode: response.status,
             retry: retries,
             retryDelayMs,
@@ -189,10 +214,14 @@ export class SwitchBotClient {
     }
   }
 
-  private unwrap<T>(path: string, rawResponse: unknown, bodySchema: z.ZodType<T>): T {
+  private unwrap<T>(
+    operation: SwitchBotOperation,
+    rawResponse: unknown,
+    bodySchema: z.ZodType<T>,
+  ): T {
     const response = apiEnvelopeSchema.safeParse(rawResponse);
     if (!response.success) {
-      throw new SwitchBotProtocolError(`Invalid SwitchBot API response for ${path}`);
+      throw new SwitchBotProtocolError(`Invalid SwitchBot API response for ${operation}`);
     }
 
     if (response.data.statusCode !== 100) {
@@ -204,11 +233,11 @@ export class SwitchBotClient {
 
     const body = bodySchema.safeParse(response.data.body);
     if (!body.success) {
-      throw new SwitchBotProtocolError(`Invalid SwitchBot API response body for ${path}`);
+      throw new SwitchBotProtocolError(`Invalid SwitchBot API response body for ${operation}`);
     }
 
     this.options.logger.debug("SwitchBot API success", {
-      path,
+      operation,
       statusCode: response.data.statusCode,
     });
     return body.data;
