@@ -40,6 +40,52 @@ describe("loadConfig", () => {
     ).toThrow("MCP_SERVER_API_KEY is required when MCP_TRANSPORT=http");
   });
 
+  it("rejects a SwitchBot base URL override outside the test environment", () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: "production",
+        SWITCHBOT_TOKEN: "token",
+        SWITCHBOT_SECRET: "secret",
+        SWITCHBOT_BASE_URL: "http://127.0.0.1:8787/v1.1",
+      }),
+    ).toThrow("SWITCHBOT_BASE_URL is only supported when NODE_ENV=test");
+  });
+
+  it("rejects a non-loopback SwitchBot base URL in the test environment", () => {
+    expect(() =>
+      loadConfig({
+        NODE_ENV: "test",
+        SWITCHBOT_TOKEN: "token",
+        SWITCHBOT_SECRET: "secret",
+        SWITCHBOT_BASE_URL: "https://switchbot-mock.example.test/v1.1",
+      }),
+    ).toThrow("SWITCHBOT_BASE_URL must use a loopback hostname");
+  });
+
+  it("accepts a loopback SwitchBot base URL in the test environment", () => {
+    const config = loadConfig({
+      NODE_ENV: "test",
+      SWITCHBOT_TOKEN: "token",
+      SWITCHBOT_SECRET: "secret",
+      SWITCHBOT_BASE_URL: "http://127.0.0.1:8787/v1.1",
+    });
+
+    expect(config.switchbot.baseURL).toBe("http://127.0.0.1:8787/v1.1");
+  });
+
+  it("rejects blank or padded HTTP API keys", () => {
+    for (const apiKey of ["", "   ", " padded-key", "padded-key "]) {
+      expect(() =>
+        loadConfig({
+          SWITCHBOT_TOKEN: "token",
+          SWITCHBOT_SECRET: "secret",
+          MCP_TRANSPORT: "http",
+          MCP_SERVER_API_KEY: apiKey,
+        }),
+      ).toThrow("MCP_SERVER_API_KEY");
+    }
+  });
+
   it("adds explicitly allowed HTTP hostnames without removing secure local defaults", () => {
     const config = loadConfig({
       SWITCHBOT_TOKEN: "token",

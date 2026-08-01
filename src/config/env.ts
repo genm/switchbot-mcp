@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 const TransportSchema = z.enum(["stdio", "http"]);
+const HttpApiKeySchema = z
+  .string()
+  .refine(
+    (value) => value.length > 0 && value === value.trim(),
+    "MCP_SERVER_API_KEY must be non-empty and must not have surrounding whitespace",
+  );
 const CommaSeparatedHostnamesSchema = z
   .string()
   .refine(
@@ -14,7 +20,7 @@ const EnvSchema = z.object({
   SWITCHBOT_SECRET: z.string().min(1, "SWITCHBOT_SECRET is required"),
   SWITCHBOT_BASE_URL: z.url().optional(),
   MCP_TRANSPORT: TransportSchema.default("stdio"),
-  MCP_SERVER_API_KEY: z.string().optional(),
+  MCP_SERVER_API_KEY: HttpApiKeySchema.optional(),
   MCP_HTTP_HOST: z.string().default("127.0.0.1"),
   MCP_HTTP_PORT: z.coerce.number().int().min(1).max(65535).default(8787),
   MCP_HTTP_ALLOWED_HOSTS: CommaSeparatedHostnamesSchema.optional(),
@@ -66,6 +72,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
 
   const value = parsed.data;
 
+  if (value.SWITCHBOT_BASE_URL) {
+    validateTestBaseURL(value.SWITCHBOT_BASE_URL, env.NODE_ENV);
+  }
+
   if (value.MCP_TRANSPORT === "http" && !value.MCP_SERVER_API_KEY) {
     throw new Error("MCP_SERVER_API_KEY is required when MCP_TRANSPORT=http");
   }
@@ -95,6 +105,26 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     },
     logLevel: value.LOG_LEVEL,
   };
+}
+
+function validateTestBaseURL(baseURL: string, nodeEnv: string | undefined): void {
+  if (nodeEnv !== "test") {
+    throw new Error("SWITCHBOT_BASE_URL is only supported when NODE_ENV=test");
+  }
+
+  const url = new URL(baseURL);
+  const isLoopback =
+    url.hostname === "localhost" ||
+    url.hostname === "[::1]" ||
+    /^127(?:\.\d{1,3}){3}$/.test(url.hostname);
+  if (!isLoopback) {
+    // The override changes where SwitchBot credentials are sent, so test traffic stays local.
+    throw new Error("SWITCHBOT_BASE_URL must use a loopback hostname");
+  }
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("SWITCHBOT_BASE_URL must use http or https");
+  }
 }
 
 function buildAllowedHostnames(host: string, configured: string[]): string[] {
