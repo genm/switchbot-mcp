@@ -74,8 +74,49 @@ export async function startHttpServer(
     path: options.path,
   });
 
-  const shutdown = async () => {
+  let shutdownPromise: Promise<void> | undefined;
+  const shutdown = () => {
+    shutdownPromise ??= closeHttpServer(mcpServer, server);
+    return shutdownPromise;
+  };
+  const handleSignal = (signal: NodeJS.Signals) => {
+    void shutdown().then(
+      () => process.exit(0),
+      (error: unknown) => {
+        options.logger.error("HTTP transport shutdown failed", {
+          signal,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        process.exit(1);
+      },
+    );
+  };
+
+  process.once("SIGINT", () => handleSignal("SIGINT"));
+  process.once("SIGTERM", () => handleSignal("SIGTERM"));
+}
+
+interface ClosableMcpServer {
+  close(): Promise<void>;
+}
+
+interface ClosableHttpServer {
+  close(callback: (error?: Error) => void): void;
+}
+
+export async function closeHttpServer(
+  mcpServer: ClosableMcpServer,
+  server: ClosableHttpServer,
+): Promise<void> {
+  let mcpError: unknown;
+  try {
     await mcpServer.close();
+  } catch (error) {
+    mcpError = error;
+  }
+
+  let serverError: unknown;
+  try {
     await new Promise<void>((resolve, reject) => {
       server.close((error) => {
         if (error) {
@@ -85,14 +126,19 @@ export async function startHttpServer(
         resolve();
       });
     });
-  };
+  } catch (error) {
+    serverError = error;
+  }
 
-  process.once("SIGINT", () => {
-    void shutdown().finally(() => process.exit(0));
-  });
-  process.once("SIGTERM", () => {
-    void shutdown().finally(() => process.exit(0));
-  });
+  if (mcpError && serverError) {
+    throw new AggregateError([mcpError, serverError], "HTTP transport shutdown failed");
+  }
+  if (mcpError) {
+    throw mcpError;
+  }
+  if (serverError) {
+    throw serverError;
+  }
 }
 
 export function requestPathMatches(req: IncomingMessage, expectedPath: string): boolean {
