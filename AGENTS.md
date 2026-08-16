@@ -25,13 +25,16 @@ This file defines repository-level operating rules for AI agents working in this
 
 ## Git / Workflow Rules
 
-- Keep workflows as git-light as possible. Do not run `git status`, `git commit`, or `git push` unless the user explicitly asks.
-- Exception: if chezmoi-managed source files are changed, automatic `git add/commit/push` is allowed when necessary unless the user explicitly opts out.
+- Keep workflows as git-light as possible while preserving safe repository inspection.
+- Read-only Git commands such as `git status`, `git diff`, `git log`, branch inspection, and `git fetch` are allowed and should be used to establish repository state before mutations.
+- Do not create commits, push branches, open pull requests, or merge changes for review-, diagnosis-, or explanation-only tasks.
+- For implementation and delivery tasks, create commits on a dedicated feature branch when needed. Pushes, pull requests, and merges require explicit user authorization or an explicitly requested delivery workflow; never push directly to the default or another protected branch.
+- Exception: if chezmoi-managed source files are changed, the chezmoi workflow may require automatic `git add/commit/push` when necessary unless the user explicitly opts out; this exception never authorizes a direct push to the default or another protected branch.
 - Prefer `chezmoi apply` / `chezmoi update` over direct git operations for synchronization.
 
 ### Additional rules for git worktree usage
 
-- Commit and push promptly in worktree-based tasks.
+- For worktree-based delivery tasks, commit promptly after verification; push only when the delivery workflow is explicitly authorized.
 - If `lefthook` fails, fix the issues before continuing.
 - Before pushing from a worktree, always run:
   - `git fetch origin main --prune`
