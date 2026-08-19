@@ -1,6 +1,14 @@
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+
 import { describe, expect, it } from "vitest";
 
-import { closeHttpServer, isAuthorized, requestPathMatches } from "../../src/transports/http.js";
+import {
+  closeHttpServer,
+  isAuthorized,
+  listenHttpServer,
+  requestPathMatches,
+} from "../../src/transports/http.js";
 
 function req(input: { host?: string; authorization?: string; url?: string }) {
   return {
@@ -40,5 +48,56 @@ describe("HTTP transport guards", () => {
 
     await expect(closeHttpServer(mcpServer, httpServer)).rejects.toThrow("MCP close failed");
     expect(calls).toEqual(["mcp", "http"]);
+  });
+
+  it("closes the connected MCP server when the HTTP listener cannot bind", async () => {
+    const occupiedServer = createServer();
+    await new Promise<void>((resolve, reject) => {
+      occupiedServer.once("error", reject);
+      occupiedServer.listen(0, "127.0.0.1", resolve);
+    });
+    const port = (occupiedServer.address() as AddressInfo).port;
+    let closed = false;
+    const mcpServer = {
+      close: async () => {
+        closed = true;
+      },
+    };
+    const conflictingServer = createServer();
+
+    try {
+      await expect(
+        listenHttpServer(mcpServer, conflictingServer, port, "127.0.0.1"),
+      ).rejects.toMatchObject({ code: "EADDRINUSE" });
+      expect(closed).toBe(true);
+    } finally {
+      await new Promise<void>((resolve, reject) => {
+        occupiedServer.close((error) => (error ? reject(error) : resolve()));
+      });
+    }
+  });
+
+  it("preserves bind and MCP cleanup failures from HTTP startup", async () => {
+    const bindError = new Error("address already in use");
+    const closeError = new Error("MCP close failed");
+    const mcpServer = {
+      close: async () => {
+        throw closeError;
+      },
+    };
+    const httpServer = {
+      once: (_event: "error", listener: (error: Error) => void) => {
+        listener(bindError);
+      },
+      off: () => undefined,
+      listen: (_port: number, _host: string, _callback: () => void) => undefined,
+    };
+
+    const error = await listenHttpServer(mcpServer, httpServer, 8787, "127.0.0.1").catch(
+      (caught: unknown) => caught,
+    );
+
+    expect(error).toBeInstanceOf(AggregateError);
+    expect((error as AggregateError).errors).toEqual([bindError, closeError]);
   });
 });
