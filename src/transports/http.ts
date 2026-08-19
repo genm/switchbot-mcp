@@ -61,12 +61,7 @@ export async function startHttpServer(
     }
   });
 
-  await new Promise<void>((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(options.port, options.host, () => {
-      resolve();
-    });
-  });
+  await listenHttpServer(mcpServer, server, options.port, options.host);
 
   options.logger.info("SwitchBot MCP server running on HTTP", {
     host: options.host,
@@ -100,8 +95,46 @@ interface ClosableMcpServer {
   close(): Promise<void>;
 }
 
+interface ListenableHttpServer {
+  once(event: "error", listener: (error: Error) => void): unknown;
+  off(event: "error", listener: (error: Error) => void): unknown;
+  listen(port: number, host: string, callback: () => void): unknown;
+}
+
 interface ClosableHttpServer {
   close(callback: (error?: Error) => void): void;
+}
+
+export async function listenHttpServer(
+  mcpServer: ClosableMcpServer,
+  server: ListenableHttpServer,
+  port: number,
+  host: string,
+): Promise<void> {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const onError = (error: Error) => {
+        server.off("error", onError);
+        reject(error);
+      };
+      server.once("error", onError);
+      server.listen(port, host, () => {
+        server.off("error", onError);
+        resolve();
+      });
+    });
+  } catch (listenError) {
+    try {
+      // connect() has already succeeded, so a bind failure must unwind the MCP transport too.
+      await mcpServer.close();
+    } catch (closeError) {
+      throw new AggregateError(
+        [listenError, closeError],
+        "HTTP transport startup and cleanup failed",
+      );
+    }
+    throw listenError;
+  }
 }
 
 export async function closeHttpServer(
