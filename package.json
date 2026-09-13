@@ -75,16 +75,16 @@
     "@commitlint/config-conventional": "^21.2.2",
     "@cyclonedx/cyclonedx-npm": "6.0.1",
     "@modelcontextprotocol/client": "^2.0.0",
-    "@types/node": "^24.13.3",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@types/node": "^24.13.4",
+    "@vitest/coverage-v8": "^5.0.0",
     "fast-check": "^4.9.0",
     "lefthook": "^2.1.12",
-    "oxfmt": "^0.66.0",
-    "oxlint": "^1.81.0",
+    "oxfmt": "^0.67.0",
+    "oxlint": "^1.82.0",
     "publint": "^0.3.24",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.0"
   },
   "overrides": {
     "@modelcontextprotocol/node": {
