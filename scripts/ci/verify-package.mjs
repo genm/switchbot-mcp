@@ -153,6 +153,12 @@ function verifyInstallLinks(packageJson) {
   const readmes = ["README.md", "README.ja.md"].map((filename) =>
     readFileSync(join(repositoryRoot, filename), "utf8"),
   );
+
+  // Archived repositories intentionally no longer advertise install links for the retired package.
+  if (readmes.every((readme) => /^# .*Archived|^# .*アーカイブ済み/m.test(readme))) {
+    return;
+  }
+
   const expectedEnvironment = {
     SWITCHBOT_TOKEN: "YOUR_SWITCHBOT_TOKEN",
     SWITCHBOT_SECRET: "YOUR_SWITCHBOT_SECRET",
